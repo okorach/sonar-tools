@@ -168,8 +168,8 @@ class Setting(SqObject):
 
     @property
     def component_key(self) -> Optional[str]:
-        """Returns the component key string, or None for global settings"""
-        return self.component.key if self.component is not None else None
+        """Returns the component's project key string, or None for global settings"""
+        return self.component.project().key if self.component is not None else None
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, component: Optional[Component] = None, use_cache: bool = True) -> Setting:
@@ -188,7 +188,7 @@ class Setting(SqObject):
         """Creates a setting with a custom value"""
         branch = component.branch if component is not None else None
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component, branch=branch)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component.project().key if component else None, branch=branch)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, key, component)
 
@@ -285,19 +285,19 @@ class Setting(SqObject):
         log.debug("Setting %s to value '%s'", self, value)
         if isinstance(value, list) and isinstance(value[0], str):
             params = [("key", self.key)] + [("values", v) for v in value]
-            if self.component:
-                params += [("component", self.component)]
+            if self.component_key:
+                params += [("component", self.component_key)]
             if self.branch:
                 params += [("branch", self.branch)]
             api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE)
             api_params = "&".join([f"{p[0]}={p[1]}" for p in params])
         else:
             if isinstance(value, bool):
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "value": str(value).lower()}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "value": str(value).lower()}
             elif isinstance(value, list):
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "fieldValues": [json.dumps(v) for v in value]}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "fieldValues": [json.dumps(v) for v in value]}
             else:
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "values" if self.multi_valued else "value": value}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "values" if self.multi_valued else "value": value}
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
         try:
             if ok := self.post(api, params=api_params).ok:
@@ -309,7 +309,7 @@ class Setting(SqObject):
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
-        params = {"keys": self.key, "component": self.component, "branch": self.branch}
+        params = {"keys": self.key, "component": self.component_key, "branch": self.branch}
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
@@ -436,7 +436,7 @@ class Setting(SqObject):
         if o:
             return o
         if component:
-            data = json.loads(endpoint.get("components/show", params={"component": component}).text)
+            data = json.loads(endpoint.get("components/show", params={"component": component.project().key}).text)
             return Setting.load(endpoint, data["component"] | {cls.__COMPONENT: component, "key": COMPONENT_VISIBILITY})
         else:
             if endpoint.is_sonarcloud():
@@ -475,6 +475,8 @@ class Setting(SqObject):
         branch = component.branch if component is not None else None
         if branch:
             search_params["branch"] = branch
+        if component is not None:
+            search_params["component"] = component.project().key
         if include_not_set:
             for key, data in cls.load_definitions(endpoint).items():
                 if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
@@ -562,13 +564,15 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: Union[int, s
 
             org = organizations.Organization.get_object(endpoint, endpoint.organization)
             return org.set_new_code_period(nc_type, nc_value)
-        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=component)
+        component_key = component.project().key if component is not None else None
+        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=component_key)
         ok = endpoint.post(api, params=params1).ok
-        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=component)
+        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=component_key)
         ok = ok and endpoint.post(api, params=params2).ok
     else:
+        component_key = component.project().key if component is not None else None
         api, _, params, _ = endpoint.api.get_details(
-            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=component, branch=branch
+            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=component_key, branch=branch
         )
         ok = endpoint.post(api, params=params).ok
     if ok:
@@ -582,7 +586,7 @@ def set_visibility(endpoint: Platform, visibility: str, component: Optional[Comp
     """Sets the platform global default visibility or component visibility"""
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-        return endpoint.post("projects/update_visibility", params={"project": component, "visibility": visibility}).ok
+        return endpoint.post("projects/update_visibility", params={"project": component.project().key, "visibility": visibility}).ok
     log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
     return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
@@ -630,8 +634,11 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[Componen
     :return: The returned API data
     """
     branch = component.branch if component is not None else None
-    if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
-        params = {"project": component, "branch": branch}
+    component_key = component.project().key if component is not None else None
+    if key == COMPONENT_VISIBILITY:
+        data = json.loads(endpoint.get("components/show", params={"component": component_key}).text)["component"]
+    elif key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
+        params = {"project": component_key, "branch": branch}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET_NEW_CODE_PERIOD, **params)
         data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
@@ -643,7 +650,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[Componen
     else:
         if key == NEW_CODE_PERIOD:
             key = "sonar.leak.period.type"
-        params = {"component": component, "branch": branch, "keys": key}
+        params = {"component": component_key, "branch": branch, "keys": key}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
         data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
         if len(data) == 0 and component is None:

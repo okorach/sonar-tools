@@ -211,9 +211,11 @@ def test_set_new_code_period() -> None:
         assert settings.set_new_code_period(tutil.SQ, "DAYS", 30, component=proj1)
         o = settings.get_new_code_period(tutil.SQ, component=proj1)
         assert o.value == "NUMBER_OF_DAYS = 30"
-        assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", component=proj1)
-        assert o.value == "SPECIFIC_ANALYSIS = XXX"
-        assert o.reset()
+        if tutil.SQ.version() < (10, 0, 0):
+            assert settings.set_new_code_period(tutil.SQ, "SPECIFIC_ANALYSIS", "XXX", component=proj1)
+            assert o.value == "SPECIFIC_ANALYSIS = XXX"
+        assert settings.set_new_code_period(tutil.SQ, "PREVIOUS_VERSION", None, component=proj1)
+        o.refresh()
         assert o.value == "PREVIOUS_VERSION"
 
 
