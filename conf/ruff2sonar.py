@@ -68,11 +68,25 @@ def main() -> None:
             rule_id = m.group(4)
             message = m.group(6)
             issue_range = {"startLine": int(m.group(2)), "endLine": int(m.group(2)), "startColumn": int(m.group(3)) - 1, "endColumn": int(m.group(3))}
-            sonar_issue = {"engineId": TOOLNAME, "ruleId": rule_id, "effortMinutes": 5, "primaryLocation": {"message": message, "filePath": file_path, "textRange": issue_range}}
+            sonar_issue = {
+                "engineId": TOOLNAME,
+                "ruleId": rule_id,
+                "effortMinutes": 5,
+                "primaryLocation": {"message": message, "filePath": file_path, "textRange": issue_range},
+            }
             if v1:
                 sonar_issue["severity"] = "MAJOR"
                 sonar_issue["type"] = "CODE_SMELL"
-            rules_dict[rule_id] = {"id": rule_id, "name": rule_id, "description": message, "engineId": TOOLNAME, "type": "CODE_SMELL", "severity": "MAJOR", "cleanCodeAttribute": "LOGICAL", "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}]}
+            rules_dict[rule_id] = {
+                "id": rule_id,
+                "name": rule_id,
+                "description": message,
+                "engineId": TOOLNAME,
+                "type": "CODE_SMELL",
+                "severity": "MAJOR",
+                "cleanCodeAttribute": "LOGICAL",
+                "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
+            }
         elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", line):
             # Multi-line span closing marker: "   | |_____^ RUF012"
             _apply_range_marker(issue_range, rule_id, end_line, None, len(m.group(1)))
