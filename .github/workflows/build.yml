@@ -36,13 +36,15 @@ jobs:
         continue-on-error: false
         # Linting is done in the run_linters.sh script
       
-      # - name: Run tests
-      #  working-directory: .
-      #  run: |
-      #    chmod +x conf/run_tests.sh
-      #    conf/run_tests.sh
-      #    echo "--------- UT report ---------"; cat build/xunit*.xml
-      #    echo "---------Coverage report ---------"; cat build/coverage*.xml
+      - name: Run unit tests (offline / no SonarQube instance required)
+        run: |
+          mkdir -p build
+          poetry run coverage run --branch --source=. \
+            -m pytest test/unit/test_dependency_risks.py test/unit/test_utilities.py \
+                      test/unit/test_logging.py test/unit/test_sif.py test/unit/test_update_center.py \
+            --junit-xml=build/xunit-results.xml
+          poetry run coverage xml -o build/coverage.xml
+        continue-on-error: true
       - name: Run linters
         working-directory: .
         run: |
@@ -75,6 +77,8 @@ jobs:
           # Add: -Dsonar.userHome=./.sonar for local cache
           args: >
             -Dsonar.verbose=false
+            -Dsonar.python.xunit.reportPath=build/xunit-results.xml
+            -Dsonar.python.coverage.reportPaths=build/coverage.xml
 
 
   # code-ql:
