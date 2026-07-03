@@ -36,6 +36,18 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/sonar-sqaa/build-scripts/posttool-sqaa.sh",
+            "timeout": 60
+          }
+        ]
+      }
     ]
   }
 }
