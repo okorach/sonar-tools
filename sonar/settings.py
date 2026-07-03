@@ -625,6 +625,18 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     return setting_value
 
 
+def _get_setting_via_values_api(endpoint: Platform, key: str, component_key: Optional[str], branch: Optional[str], component: Optional[Component]) -> tuple:
+    """Fetches a setting via settings/values API, returns (resolved_key, data)"""
+    if key == NEW_CODE_PERIOD:
+        key = "sonar.leak.period.type"
+    params = {"component": component_key, "branch": branch, "keys": key}
+    api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
+    data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
+    if not data and component is None:
+        raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
+    return key, (data[0] if not endpoint.is_sonarcloud() and data else {"inherited": True})
+
+
 def get_settings_data(endpoint: Platform, key: str, component: Optional[Component]) -> ApiPayload:
     """Reads a setting data with different API depending on setting key
 
@@ -648,12 +660,5 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[Componen
         api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=AI_CODE_FIX)
         data = json.loads(endpoint.get(api, params=params).text)
     else:
-        if key == NEW_CODE_PERIOD:
-            key = "sonar.leak.period.type"
-        params = {"component": component_key, "branch": branch, "keys": key}
-        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
-        data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
-        if len(data) == 0 and component is None:
-            raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
-        data = data[0] if not endpoint.is_sonarcloud() and len(data) > 0 else {"inherited": True}
+        key, data = _get_setting_via_values_api(endpoint, key, component_key, branch, component)
     return data | {"key": key, "component": component, "branch": branch}
