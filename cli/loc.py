@@ -101,7 +101,7 @@ def __get_object_json_data(o: object, **kwargs: Any) -> dict[str, str]:
     otype = type(o).__name__.lower()
     is_branch = otype in ("branch", "applicationbranch")
     is_pr = otype == "pullrequest"
-    parent_o = o.concerned_object if (is_branch or is_pr) else o
+    parent_o = o.project if (is_branch or is_pr) else o
     d = {parent_type: parent_o.key, "ncloc": ""}
     try:
         d["ncloc"] = o.loc()

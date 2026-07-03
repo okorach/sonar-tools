@@ -169,7 +169,7 @@ class Setting(SqObject):
     @property
     def component_key(self) -> Optional[str]:
         """Returns the component's project key string, or None for global settings"""
-        return self.component.project().key if self.component is not None else None
+        return self.component.project.key if self.component is not None else None
 
     @classmethod
     def get_object(cls, endpoint: Platform, key: str, component: Optional[Component] = None, use_cache: bool = True) -> Setting:
@@ -188,7 +188,7 @@ class Setting(SqObject):
         """Creates a setting with a custom value"""
         branch = component.branch if component is not None else None
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component.project().key if component else None, branch=branch)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component.project.key if component else None, branch=branch)
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, key, component)
 
@@ -436,7 +436,7 @@ class Setting(SqObject):
         if o:
             return o
         if component:
-            data = json.loads(endpoint.get("components/show", params={"component": component.project().key}).text)
+            data = json.loads(endpoint.get("components/show", params={"component": component.project.key}).text)
             return Setting.load(endpoint, data["component"] | {cls.__COMPONENT: component, "key": COMPONENT_VISIBILITY})
         else:
             if endpoint.is_sonarcloud():
@@ -476,7 +476,7 @@ class Setting(SqObject):
         if branch:
             search_params["branch"] = branch
         if component is not None:
-            search_params["component"] = component.project().key
+            search_params["component"] = component.project.key
         if include_not_set:
             for key, data in cls.load_definitions(endpoint).items():
                 if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
@@ -564,13 +564,13 @@ def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: Union[int, s
 
             org = organizations.Organization.get_object(endpoint, endpoint.organization)
             return org.set_new_code_period(nc_type, nc_value)
-        component_key = component.project().key if component is not None else None
+        component_key = component.project.key if component is not None else None
         api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=component_key)
         ok = endpoint.post(api, params=params1).ok
         api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=component_key)
         ok = ok and endpoint.post(api, params=params2).ok
     else:
-        component_key = component.project().key if component is not None else None
+        component_key = component.project.key if component is not None else None
         api, _, params, _ = endpoint.api.get_details(
             Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=component_key, branch=branch
         )
@@ -586,7 +586,7 @@ def set_visibility(endpoint: Platform, visibility: str, component: Optional[Comp
     """Sets the platform global default visibility or component visibility"""
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-        return endpoint.post("projects/update_visibility", params={"project": component.project().key, "visibility": visibility}).ok
+        return endpoint.post("projects/update_visibility", params={"project": component.project.key, "visibility": visibility}).ok
     log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
     return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
@@ -634,7 +634,7 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[Componen
     :return: The returned API data
     """
     branch = component.branch if component is not None else None
-    component_key = component.project().key if component is not None else None
+    component_key = component.project.key if component is not None else None
     if key == COMPONENT_VISIBILITY:
         data = json.loads(endpoint.get("components/show", params={"component": component_key}).text)["component"]
     elif key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():

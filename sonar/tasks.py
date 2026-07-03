@@ -184,6 +184,7 @@ class Task(SqObject):
         """Returns the background task end date or None if not ended yet"""
         return sutil.string_to_datetime(self.sq_json.get("endedAt"))
 
+    @property
     def project(self) -> Project:
         """Returns the project of the background task"""
         return self.concerned_object

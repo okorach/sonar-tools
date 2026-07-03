@@ -232,7 +232,7 @@ def test_project_returns_project_for_risks_project_key() -> None:
 
     sentinel_project = MagicMock(name="Project(my-proj)")
     with patch("sonar.projects.Project.get_object", return_value=sentinel_project) as get_object:
-        result = risk.project()
+        result = risk.project
 
     assert result is sentinel_project
     get_object.assert_called_once_with(endpoint, "my-proj")
@@ -246,8 +246,8 @@ def test_project_resolves_per_risk_project_key() -> None:
 
     proj_a, proj_b = MagicMock(name="proj-a"), MagicMock(name="proj-b")
     with patch("sonar.projects.Project.get_object", side_effect=lambda _ep, key: {"proj-a": proj_a, "proj-b": proj_b}[key]) as get_object:
-        assert risk_a.project() is proj_a
-        assert risk_b.project() is proj_b
+        assert risk_a.project is proj_a
+        assert risk_b.project is proj_b
 
     assert get_object.call_count == 2
     assert [c.args[1] for c in get_object.call_args_list] == ["proj-a", "proj-b"]

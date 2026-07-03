@@ -151,10 +151,10 @@ class Measure(SqObject):
         branch = pull_request = None
         key = concerned_object.key
         if concerned_object.__class__.__name__ in ("Branch", "ApplicationBranch"):
-            key = concerned_object.concerned_object.key
+            key = concerned_object.project.key
             branch = concerned_object.name
         elif concerned_object.__class__.__name__ == "PullRequest":
-            key = concerned_object.concerned_object.key
+            key = concerned_object.project.key
             pull_request = concerned_object.key
         params = search_params | {"component": key, "metricKeys": util.list_to_csv(metrics_list), "branch": branch, "pullRequest": pull_request}
         api, _, params, ret = concerned_object.endpoint.api.get_details(cls, Oper.SEARCH, **params)
@@ -166,10 +166,10 @@ class Measure(SqObject):
         branch = pull_request = None
         component_key = concerned_object.key
         if concerned_object.__class__.__name__ == "Branch":
-            component_key = concerned_object.concerned_object.key
+            component_key = concerned_object.project.key
             branch = concerned_object.name
         elif concerned_object.__class__.__name__ == "PullRequest":
-            component_key = concerned_object.concerned_object.key
+            component_key = concerned_object.project.key
             pull_request = concerned_object.key
 
         m_dict = dict.fromkeys(metrics_list, None)
