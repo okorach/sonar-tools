@@ -67,8 +67,8 @@ else
 fi
 
 if ls "${BUILD_DIR}"/xunit-*.xml >/dev/null 2>&1; then
-  echo "XUNIT FILES = ${BUILD_DIR}/xunit-*.xml"
-  cmd="${cmd} -Dsonar.python.xunit.reportPath=${BUILD_DIR}/xunit-*.xml"
+  echo "XUNIT FILES = ${relativeDir}/xunit-*.xml"
+  cmd="${cmd} -Dsonar.python.xunit.reportPath=${relativeDir}/xunit-*.xml"
 else
   echo "===> NO UNIT TESTS REPORT"
 fi
@@ -101,4 +101,5 @@ echo "=============================================================="
 echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
 echo "=============================================================="
 
+cd "${ROOT_DIR}" || exit 1
 ${cmd}
