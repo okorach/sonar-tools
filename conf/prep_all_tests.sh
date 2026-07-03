@@ -26,7 +26,7 @@ function create_fresh_project {
     url="${2}"
     usertoken="${3}"
     token="${4}"
-    shift 3
+    shift 4
     opts=("$@")
     opt_org=""
     if [[ "${url}" = "https://sonarcloud.io" ]]; then
