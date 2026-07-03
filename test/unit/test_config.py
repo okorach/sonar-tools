@@ -100,6 +100,7 @@ def test_config_export_yaml(yaml_file: Generator[str]) -> None:
         "groups": "name",
         "qualityGates": "name",
         "qualityProfiles": "language",
+        "licenseProfiles": "name",
     }
     for section in config._SECTIONS_TO_SORT:
         elems = json_config.get(section, {})

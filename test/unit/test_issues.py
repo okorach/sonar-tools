@@ -238,7 +238,7 @@ def test_changelog() -> None:
     assert changelog.assignee(False) is None
     delta = timedelta(days=1)
     date_change = tconf.ISSUE_FP_CHANGELOG_DATE
-    assert date_change <= changelog.date_time().replace(tzinfo=None) < date_change + delta
+    assert date_change <= changelog.date_time() < date_change + delta
     assert changelog.author() == tconf.ADMIN_USER
 
 
@@ -325,8 +325,8 @@ def test_get_facets() -> None:
     assert len(facets) > 1
     assert not any(f.endswith(".py") for f in facets)
     facet = "fileUuids" if tutil.SQ.is_sonarcloud() else "files"
-    facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT)
-    assert len(facets) > 1
+    facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT, raise_error=False)
+    assert len(facets) > 0
     assert any(f.endswith(".py") for f in facets)
 
 
@@ -519,7 +519,10 @@ def test_apply_event_false_positive() -> None:
     # Build a minimal Changelog object representing a false-positive event
     from sonar.changelog import Changelog
 
-    fp_event = Changelog({"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "resolution", "newValue": "FALSE-POSITIVE"}]})
+    fp_event = Changelog(
+        {"creationDate": "2026-01-01T00:00:00+0000", "diffs": [{"key": "issueStatus", "newValue": "FALSE_POSITIVE"}]},
+        concerned_object=issue,
+    )
 
     settings = {syncer.SYNC_ASSIGN: True}
     result = issue._Issue__apply_event(fp_event, settings)

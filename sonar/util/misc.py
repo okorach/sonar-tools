@@ -261,11 +261,9 @@ def list_to_dict(original_list: list[dict[str, Any]], key_field: str, keep_in_va
     """Converts a list to dict with list key_field as dict key"""
     if original_list is None:
         return original_list
-    converted_dict = {elem[key_field]: elem for elem in original_list}
-    if not keep_in_values:
-        for e in converted_dict.values():
-            e.pop(key_field)
-    return converted_dict
+    if keep_in_values:
+        return {elem[key_field]: elem for elem in original_list}
+    return {elem[key_field]: {k: v for k, v in elem.items() if k != key_field} for elem in original_list}
 
 
 def dict_to_list(original_dict: dict[str, Any], key_field: str, value_field: Optional[str] = "value") -> list[dict[str, Any]]:

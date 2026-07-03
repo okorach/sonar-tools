@@ -721,7 +721,7 @@ class Project(Component):
         from sonar.dependency_risks import DependencyRisk
 
         log.info("Searching dependency risks for %s with endpoint %s", str(self), str(self.endpoint))
-        return DependencyRisk.search(self.endpoint, project=self.key, **search_params)
+        return DependencyRisk.search(self.endpoint, project_key=self.key, **search_params)
 
     def count_third_party_issues(self, **search_params: Any) -> dict[str, int]:
         """Returns the nbr of thrid party issues for the project"""
