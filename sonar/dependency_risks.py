@@ -573,6 +573,7 @@ class DependencyRisk(SqObject):
                 counter += 1
         return counter
 
+    @property
     def project(self) -> Any:
         """Returns the project object (needed by syncer for ignore_components check)."""
         from sonar.projects import Project

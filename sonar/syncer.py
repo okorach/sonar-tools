@@ -275,7 +275,7 @@ def sync_lists(
         util.class_name(src_findings[0]).lower(),
         str(src_object),
     )
-    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project.key != tgt_object.project.key
     return __sync_curated_list(interesting_src_findings, tgt_findings, sync_settings)
 
 
@@ -536,7 +536,7 @@ def sync_lists_bidirectional(
     if len(driving_findings) == 0:
         return [], counters
 
-    ignore_components = src_object.project().key != tgt_object.project().key
+    ignore_components = src_object.project.key != tgt_object.project.key
     sync_settings[SYNC_IGNORE_COMPONENTS] = ignore_components
 
     # Match driving findings against the FULL pool of non-closed findings on the other side
@@ -596,7 +596,7 @@ def _sync_dependency_risks(
             continue
         interesting.append(dr)
 
-    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project().key != tgt_object.project().key
+    sync_settings[SYNC_IGNORE_COMPONENTS] = src_object.project.key != tgt_object.project.key
     return __sync_curated_list(interesting, tgt_drs, sync_settings)
 
 

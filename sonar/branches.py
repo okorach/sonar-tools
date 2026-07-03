@@ -71,7 +71,7 @@ class Branch(components.Component):
         self.branch = unquote(data["name"])
         self.name: str = self.branch
         self.concerned_object: proj.Project = proj.Project.get_project_object(endpoint, data[self.__class__.__PROJECT_KEY])
-        log.debug("Loading branch %s of %s", self.name, self.concerned_object)
+        log.debug("Loading branch %s of %s", self.name, self.project)
         self._is_main: bool = data.get("isMain")
         self._new_code: str = data.get("newCode")
         self._keep_when_inactive: str = data.get("excludedFromPurge")
@@ -79,7 +79,7 @@ class Branch(components.Component):
         log.debug("Constructed object %s", self)
 
     def __str__(self) -> str:
-        return f"branch '{self.name}' of {self.project()}"
+        return f"branch '{self.name}' of {self.project}"
 
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
@@ -88,7 +88,7 @@ class Branch(components.Component):
 
     def hash_object(self) -> tuple[Any, ...]:
         """Computes a uuid for the branch that can serve as index"""
-        return (self.concerned_object.key, self.name)
+        return (self.project.key, self.name)
 
     @classmethod
     def get_object(cls, endpoint: Platform, project: Union[str, proj.Project], branch_name: str, use_cache: bool = False) -> Branch:
@@ -141,14 +141,15 @@ class Branch(components.Component):
 
     def refresh(self) -> Branch:
         """Refresh a branch from SonarQube"""
-        return self.__class__.get_object(self.endpoint, self.concerned_object, self.name, use_cache=False)
+        return self.__class__.get_object(self.endpoint, self.project, self.name, use_cache=False)
 
     def url(self) -> str:
         """returns the branch URL in SonarQube as permalink"""
-        return f"{self.concerned_object.url()}&branch={requests.utils.quote(self.name)}"
+        return f"{self.project.url()}&branch={requests.utils.quote(self.name)}"
 
+    @property
     def project(self) -> Component:
-        """Returns the project key"""
+        """Returns the parent project"""
         return self.concerned_object
 
     @property
@@ -175,7 +176,7 @@ class Branch(components.Component):
 
     def delete(self) -> bool:
         """Deletes a branch, return whether the deletion was successful"""
-        return self.delete_object(project=self.concerned_object.key, branch=self.name)
+        return self.delete_object(project=self.project.key, branch=self.name)
 
     def get(self, api: str, params: ApiParams = None, data: Optional[str] = None, mute: tuple[HTTPStatus] = (), **kwargs: str) -> requests.Response:
         """Performs an HTTP GET request for the object"""
@@ -205,7 +206,7 @@ class Branch(components.Component):
             else:
                 # Delegate to the parent project so a single api/new_code_periods/list
                 # call is shared (and cached) across every branch of the project.
-                self._new_code = self.concerned_object.branch_new_code_periods().get(self.name, "")
+                self._new_code = self.project.branch_new_code_periods().get(self.name, "")
         if self._new_code is None:
             self._new_code = ""  # inherited period — prevent perpetual re-fetch
         return self._new_code
@@ -225,7 +226,7 @@ class Branch(components.Component):
                 raise exceptions.UnsupportedOperation(f"{self!s} is the main branch, can't be purgeable")
             return True
         api, _, params, _ = self.endpoint.api.get_details(
-            self, Oper.KEEP_WHEN_INACTIVE, project=self.concerned_object.key, branch=self.name, value=str(keep).lower()
+            self, Oper.KEEP_WHEN_INACTIVE, project=self.project.key, branch=self.name, value=str(keep).lower()
         )
         self.post(api, params=params)
         self._keep_when_inactive = keep
@@ -241,8 +242,8 @@ class Branch(components.Component):
         if not self.is_main:
             raise exceptions.UnsupportedOperation(f"{self!s} can't be renamed since it's not the main branch")
 
-        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.concerned_object), self.name, new_name)
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.concerned_object.key, name=new_name)
+        log.info("Renaming main branch of %s from '%s' to '%s'", str(self.project), self.name, new_name)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.RENAME, project=self.project.key, name=new_name)
         self.post(api, params=params)
         self.__class__.CACHE.pop(self)
         self.name = new_name
@@ -255,9 +256,9 @@ class Branch(components.Component):
         :raises ObjectNotFound: If the branch is not found
         :return: Whether the operation was successful
         """
-        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, project=self.concerned_object.key, branch=self.name)
+        api, _, params, _ = self.endpoint.api.get_details(self, Oper.SET_MAIN, project=self.project.key, branch=self.name)
         self.post(api, params=params)
-        for b in self.concerned_object.branches().values():
+        for b in self.project.branches().values():
             b.is_main = b.name == self.name
         return True
 
@@ -269,9 +270,7 @@ class Branch(components.Component):
         :return: Whether the operation was successful
         """
         log.info("Setting %s new code to %s / %s", self, new_code_type, additional_data)
-        return settings.set_new_code_period(
-            endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, project_key=self.concerned_object.key, branch=self.name
-        )
+        return settings.set_new_code_period(endpoint=self.endpoint, nc_type=new_code_type, nc_value=additional_data, component=self)
 
     def export(self, export_settings: ConfigSettings) -> ObjectJsonRepr:
         """Exports a branch configuration (is main, keep when inactive, optionally name, project)
@@ -288,7 +287,7 @@ class Branch(components.Component):
         if self.new_code():
             data[settings.NEW_CODE_PERIOD] = self.new_code()
         if export_settings.get("FULL_EXPORT", True):
-            data |= {"name": self.name, "project": self.concerned_object.key}
+            data |= {"name": self.name, "project": self.project.key}
         data = util.remove_nones(data)
         return None if len(data) == 0 else data
 
@@ -315,38 +314,38 @@ class Branch(components.Component):
         """Returns a list of issues on a branch"""
         from sonar.issues import Issue
 
-        return Issue.search_by_project(self.endpoint, project=self.concerned_object.key, raise_error=False, **(search_params | {"branch": self.name}))
+        return Issue.search_by_project(self.endpoint, project=self.project.key, raise_error=False, **(search_params | {"branch": self.name}))
 
     def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a list of hotspots on a branch"""
         from sonar.hotspots import Hotspot
 
-        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.project.key, "branch": self.name}))
 
     def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a list of findings, issues and hotspots together on a branch"""
-        return self.concerned_object.get_findings(**(search_params | {"branch": self.name}))
+        return self.project.get_findings(**(search_params | {"branch": self.name}))
 
     def get_dependency_risks(self, **search_params: Any) -> dict[str, DependencyRisk]:
         """Returns the SCA dependency risks for this branch"""
         from sonar.dependency_risks import DependencyRisk
 
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
-        return DependencyRisk.search(self.endpoint, project_key=self.concerned_object.key, branch=self.name, **new_params)
+        return DependencyRisk.search(self.endpoint, project_key=self.project.key, branch=self.name, **new_params)
 
     def component_data(self) -> dict[str, str]:
         """Returns key data"""
         return {
-            "key": self.concerned_object.key,
-            "name": self.concerned_object.name,
-            "type": type(self.concerned_object).__name__.upper(),
+            "key": self.project.key,
+            "name": self.project.name,
+            "type": type(self.project).__name__.upper(),
             "branch": self.name,
             "url": self.url(),
         }
 
     def project_key(self) -> str:
         """Returns the project key"""
-        return self.concerned_object.key
+        return self.project.key
 
     def sync(self, another_branch: Branch, sync_settings: ConfigSettings) -> tuple[list[dict[str, str]], dict[str, int]]:
         """Syncs branch findings with another branch
@@ -411,10 +410,10 @@ class Branch(components.Component):
         """Returns the last analysis background task of a problem, or none if not found"""
         from sonar.tasks import Task
 
-        if task := Task.search_last(self.endpoint, component=self.concerned_object.key, type="REPORT", branch=self.name):
+        if task := Task.search_last(self.endpoint, component=self.project.key, type="REPORT", branch=self.name):
             task.concerned_object = self
         return task
 
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
-        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)
+        return measures.get_history(self, metrics_list, component=self.project.key, branch=self.name)

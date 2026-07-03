@@ -106,7 +106,7 @@ class ApplicationBranch(Component):
             raise exceptions.UnsupportedOperation("No custom branch defined in during creation")
         params = [("application", app.key), ("branch", name)]
         for branch in custom_branches:
-            params.append(("project", branch.concerned_object.key))
+            params.append(("project", branch.project.key))
             params.append(("projectBranch", branch.name))
         api, _, _, _ = app.endpoint.api.get_details(cls, Oper.CREATE)
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
@@ -116,7 +116,7 @@ class ApplicationBranch(Component):
     def refresh(self) -> ApplicationBranch:
         """Refreshes an ApplicationBranch object from SonarQube"""
         self.get_navigation_data()
-        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.concerned_object.key, branch=self.name)
+        api, _, params, ret = self.endpoint.api.get_details(self, Oper.GET, application=self.project.key, branch=self.name)
         self.reload(json.loads(self.endpoint.get(api, params=params).text)[ret])
         return self
 
@@ -150,13 +150,13 @@ class ApplicationBranch(Component):
         """Returns a branch list of issues"""
         from sonar.issues import Issue
 
-        return Issue.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+        return Issue.search(self.endpoint, **(search_params | {"project": self.project.key, "branch": self.name}))
 
     def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a branch list of hotspots"""
         from sonar.hotspots import Hotspot
 
-        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "branch": self.name}))
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.project.key, "branch": self.name}))
 
     @property
     def is_main(self) -> bool:
@@ -165,14 +165,15 @@ class ApplicationBranch(Component):
 
     def get_tags(self, **kwargs) -> list[str]:
         """:return: The tags of the project corresponding to the branch"""
-        return self.concerned_object.get_tags(**kwargs)
+        return self.project.get_tags(**kwargs)
 
     def projects_branches(self) -> list[Union[Project, Branch]]:
         """The list of project or project branches included in the application branch"""
         return self._project_branches
 
+    @property
     def project(self) -> Component:
-        """The application the app branch belongs to"""
+        """Returns the parent application"""
         return self.concerned_object
 
     def delete(self) -> bool:
@@ -185,7 +186,7 @@ class ApplicationBranch(Component):
             log.warning("Can't delete main application branch, simply delete the application for that", self)
             return False
         log.info("Deleting %s", self)
-        return self.delete_object(application=self.concerned_object.key, branch=self.name)
+        return self.delete_object(application=self.project.key, branch=self.name)
 
     def export(self) -> ObjectJsonRepr:
         """Exports an application branch
@@ -213,12 +214,12 @@ class ApplicationBranch(Component):
         custom_branches = [e for e in projects_or_branches if isinstance(e, Branch)]
         if len(custom_branches) == 0:
             raise exceptions.UnsupportedOperation("No custom branch defined in Application Branch during update")
-        params = [("name", name), ("application", self.concerned_object.key), ("branch", self.name)]
+        params = [("name", name), ("application", self.project.key), ("branch", self.name)]
         for branch in custom_branches:
-            params.append(("project", branch.concerned_object.key))
+            params.append(("project", branch.project.key))
             params.append(("projectBranch", branch.name))
         string_params = "&".join([f"{p[0]}={quote(str(p[1]))}" for p in params])
-        api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE, application=self.concerned_object.key, branch=self.name)
+        api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE, application=self.project.key, branch=self.name)
         try:
             ok = self.post(api, params=string_params).ok
         except exceptions.ObjectNotFound:
@@ -259,20 +260,20 @@ class ApplicationBranch(Component):
     def component_data(self) -> ObjectJsonRepr:
         """Returns key data"""
         return {
-            "key": self.concerned_object.key,
-            "name": self.concerned_object.name,
-            "type": type(self.concerned_object).__name__.upper(),
+            "key": self.project.key,
+            "name": self.project.name,
+            "type": type(self.project).__name__.upper(),
             "branch": self.name,
             "url": self.url(),
         }
 
     def url(self) -> str:
         """Returns the URL of the Application Branch"""
-        return f"{self.base_url(local=False)}/dashboard?id={self.concerned_object.key}&branch={quote(self.name)}"
+        return f"{self.base_url(local=False)}/dashboard?id={self.project.key}&branch={quote(self.name)}"
 
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
-        return measures.get_history(self, metrics_list, component=self.concerned_object.key, branch=self.name)
+        return measures.get_history(self, metrics_list, component=self.project.key, branch=self.name)
 
 
 def list_from(app: apps.Application, data: ApiPayload) -> dict[str, ApplicationBranch]:

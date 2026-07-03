@@ -177,8 +177,8 @@ def _delete_class(problems: problem.Problem, mode: str, proj_list: list[str], ob
     counter = 0
     for obj in [p.concerned_object for p in problems if isinstance(p.concerned_object, object_class)]:
         try:
-            if obj.project().key in proj_list:
-                log.info("%s deleted, so no need to delete %s", str(obj.project()), str(obj))
+            if obj.project.key in proj_list:
+                log.info("%s deleted, so no need to delete %s", str(obj.project), str(obj))
                 continue
             log.info("%s to delete", str(obj))
             if mode != "delete" or obj.delete():

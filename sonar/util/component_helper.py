@@ -65,7 +65,7 @@ def get_components(
         pr_filter = True
     if br_filter or pr_filter:
         components = br_components + pr_components
-    components.sort(key=lambda comp: comp.project().key)
+    components.sort(key=lambda comp: comp.project.key)
     if kwargs.get(options.ANALYZED_AFTER):
         log.info("Filtering components analyzed after %s from a list of %d components", kwargs.get(options.ANALYZED_AFTER), len(components))
         analyzed_after = kwargs.get(options.ANALYZED_AFTER)

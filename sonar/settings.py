@@ -34,6 +34,7 @@ from sonar.util import cache
 from sonar.util import constants as c
 
 if TYPE_CHECKING:
+    from sonar.components import Component
     from sonar.platform import Platform
     from sonar.util.types import ApiPayload, ObjectJsonRepr
 
@@ -137,7 +138,7 @@ class Setting(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.key = data["key"]
-        self.component = data.get(self.__class__.__COMPONENT)
+        self.component: Optional[Component] = data.get(self.__class__.__COMPONENT)
         self.branch = data.get(self.__class__.__BRANCH)
         self.default_value: Optional[Any] = None
         self.value: Optional[Any] = None
@@ -165,26 +166,31 @@ class Setting(SqObject):
         """Returns the hash elements for a given object"""
         return (self.key, self.component, self.branch)
 
+    @property
+    def component_key(self) -> Optional[str]:
+        """Returns the component's project key string, or None for global settings"""
+        return self.component.project.key if self.component is not None else None
+
     @classmethod
-    def get_object(
-        cls, endpoint: Platform, key: str, component: Optional[str] = None, branch: Optional[str] = None, use_cache: bool = True
-    ) -> Setting:
+    def get_object(cls, endpoint: Platform, key: str, component: Optional[Component] = None, use_cache: bool = True) -> Setting:
         """Reads a setting from the platform"""
+        branch = component.branch if component is not None else None
         o = cls.CACHE.get(endpoint.local_url, key, component, branch)
         if o and use_cache:
             return o
-        cls.search(endpoint, use_cache=False, include_not_set=True, component=component, branch=branch)
+        cls.search(endpoint, use_cache=False, include_not_set=True, component=component)
         if o := cls.CACHE.get(endpoint.local_url, key, component, branch):
             return o
         raise exceptions.ObjectNotFound(key, message=f"Setting '{key}' not found for component '{component}' branch '{branch}'")
 
     @classmethod
-    def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
+    def create(cls, key: str, endpoint: Platform, value: Any = None, component: Optional[Component] = None) -> Setting:
         """Creates a setting with a custom value"""
+        branch = component.branch if component is not None else None
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component, branc=branch)
+        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component.project.key if component else None, branch=branch)
         endpoint.post(api, params=params)
-        return cls.get_object(endpoint, key, component, branch)
+        return cls.get_object(endpoint, key, component)
 
     def __reload_inheritance(self, data: ApiPayload) -> bool:
         """Verifies if a setting is inherited from the data returned by SQ"""
@@ -241,13 +247,13 @@ class Setting(SqObject):
 
     def refresh(self) -> Setting:
         """Reads the setting value on SonarQube"""
-        return self.reload(get_settings_data(self.endpoint, self.key, self.component, self.branch))
+        return self.reload(get_settings_data(self.endpoint, self.key, self.component))
 
     def __str__(self) -> str:
         if self.component is None:
             return f"setting '{self.key}'"
         else:
-            return f"setting '{self.key}' of {self.component} branch {self.branch}"
+            return f"setting '{self.key}' of {self.component_key} branch {self.branch}"
 
     def set(self, value: Any) -> bool:
         """Sets a setting value, returns if operation succeeded"""
@@ -279,19 +285,19 @@ class Setting(SqObject):
         log.debug("Setting %s to value '%s'", self, value)
         if isinstance(value, list) and isinstance(value[0], str):
             params = [("key", self.key)] + [("values", v) for v in value]
-            if self.component:
-                params += [("component", self.component)]
+            if self.component_key:
+                params += [("component", self.component_key)]
             if self.branch:
                 params += [("branch", self.branch)]
             api, _, _, _ = self.endpoint.api.get_details(self, Oper.UPDATE)
             api_params = "&".join([f"{p[0]}={p[1]}" for p in params])
         else:
             if isinstance(value, bool):
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "value": str(value).lower()}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "value": str(value).lower()}
             elif isinstance(value, list):
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "fieldValues": [json.dumps(v) for v in value]}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "fieldValues": [json.dumps(v) for v in value]}
             else:
-                params = {"key": self.key, "component": self.component, "branch": self.branch, "values" if self.multi_valued else "value": value}
+                params = {"key": self.key, "component": self.component_key, "branch": self.branch, "values" if self.multi_valued else "value": value}
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.UPDATE, **params)
         try:
             if ok := self.post(api, params=api_params).ok:
@@ -303,7 +309,7 @@ class Setting(SqObject):
 
     def reset(self) -> bool:
         log.info("Resetting %s", str(self))
-        params = {"keys": self.key, "component": self.component, "branch": self.branch}
+        params = {"keys": self.key, "component": self.component_key, "branch": self.branch}
         try:
             api, _, api_params, _ = self.endpoint.api.get_details(self, Oper.RESET, **params)
             ok = self.post(api, params=api_params).ok
@@ -423,14 +429,14 @@ class Setting(SqObject):
         return ("thirdParty", None)
 
     @classmethod
-    def get_visibility(cls, endpoint: Platform, component: Optional[str] = None) -> Setting:
+    def get_visibility(cls, endpoint: Platform, component: Optional[Component] = None) -> Setting:
         """Returns the platform global or component visibility"""
         key = COMPONENT_VISIBILITY if component else PROJECT_DEFAULT_VISIBILITY
         o = Setting.CACHE.get(endpoint.local_url, key, component)
         if o:
             return o
         if component:
-            data = json.loads(endpoint.get("components/show", params={"component": component}).text)
+            data = json.loads(endpoint.get("components/show", params={"component": component.project.key}).text)
             return Setting.load(endpoint, data["component"] | {cls.__COMPONENT: component, "key": COMPONENT_VISIBILITY})
         else:
             if endpoint.is_sonarcloud():
@@ -440,17 +446,18 @@ class Setting(SqObject):
             return Setting.load(endpoint, dataset[0] | {cls.__COMPONENT: None, "key": PROJECT_DEFAULT_VISIBILITY})
 
     @classmethod
-    def load_settings(cls, endpoint: Platform, data: ApiPayload, component: Optional[str] = None) -> dict[str, Setting]:
+    def load_settings(cls, endpoint: Platform, data: ApiPayload, component: Optional[Component] = None) -> dict[str, Setting]:
         """Returns settings of the global platform or a specific component object (Project, Branch, App, Portfolio)"""
         settings = {}
         # Hack: Sonar API also return setSecureSettings for projects although it's irrelevant
         settings_type_list = ["settings"] + (["setSecuredSettings"] if component is None else [])
 
+        branch = component.branch if component is not None else None
         for setting_type in settings_type_list:
             log.debug("Looking at %s", setting_type)
             for s in data.get(setting_type, {}):
                 (key, sdata) = (s, {}) if isinstance(s, str) else (s["key"], s)
-                o: Setting = cls.load(endpoint, sdata | {"key": key, "component": component})
+                o: Setting = cls.load(endpoint, sdata | {"key": key, "component": component, "branch": branch})
                 o.get_definition()
                 if o.is_internal():
                     log.debug("Skipping internal setting %s", key)
@@ -465,7 +472,11 @@ class Setting(SqObject):
         log.debug("Searching settings with parameters %s, include not set = %s", search_params, include_not_set)
         settings_dict = {}
         component = search_params.get("component")
-        branch = search_params.get("branch")
+        branch = component.branch if component is not None else None
+        if branch:
+            search_params["branch"] = branch
+        if component is not None:
+            search_params["component"] = component.project.key
         if include_not_set:
             for key, data in cls.load_definitions(endpoint).items():
                 if key.endswith("coverage.reportPath") or key == "languageSpecificParameters":
@@ -489,10 +500,10 @@ class Setting(SqObject):
             log.warning("%s", e.message)
 
         if not endpoint.is_sonarcloud():
-            o = get_new_code_period(endpoint, component, branch)
+            o = get_new_code_period(endpoint, component)
             settings_dict[o.key] = o
         if not endpoint.is_sonarcloud() and endpoint.version() >= c.MQR_5_SEVERITIES_VERSION:
-            o = get_mqr_mode(endpoint, component, branch)
+            o = get_mqr_mode(endpoint, component)
             settings_dict[o.key] = o
         VALID_SETTINGS |= set(settings_dict.keys()) | {"sonar.scm.provider", MQR_ENABLED, "sonar.cfamily.ignoreHeaderComments"}
         return settings_dict
@@ -517,72 +528,74 @@ def string_to_new_code(value: str) -> list[str]:
     return re.split(r"\s*=\s*", value, maxsplit=1)
 
 
-def get_special_settings(endpoint: Platform, setting_key: str, component: Optional[str] = None, branch: Optional[str] = None) -> dict[str, Setting]:
+def get_special_settings(endpoint: Platform, setting_key: str, component: Optional[Component] = None) -> dict[str, Setting]:
     """Returns settings that are not returned by the global search API"""
+    branch = component.branch if component is not None else None
     if o := Setting.CACHE.get(endpoint.local_url, setting_key, component, branch):
         log.debug("Found %s in cache with value %s", setting_key, str(o.value))
         return o
-    data = get_settings_data(endpoint, setting_key, component, branch)
+    data = get_settings_data(endpoint, setting_key, component)
     return Setting.load(endpoint, data | {"key": setting_key, "component": component, "branch": branch})
 
 
-def get_new_code_period(endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
+def get_new_code_period(endpoint: Platform, component: Optional[Component] = None) -> Setting:
     """returns the new code period, either the default global setting, or specific to a project/branch"""
-    return get_special_settings(endpoint, NEW_CODE_PERIOD, component, branch)
+    return get_special_settings(endpoint, NEW_CODE_PERIOD, component)
 
 
-def get_mqr_mode(endpoint: Platform, component: Optional[str] = None, branch: Optional[str] = None) -> Setting:
+def get_mqr_mode(endpoint: Platform, component: Optional[Component] = None) -> Setting:
     """returns the MQR mode setting, either the default global setting, or specific to a project/branch"""
-    return get_special_settings(endpoint, MQR_ENABLED, component, branch)
+    return get_special_settings(endpoint, MQR_ENABLED, component)
 
 
-def set_new_code_period(
-    endpoint: Platform, nc_type: str, nc_value: Union[int, str], project_key: Optional[str] = None, branch: Optional[str] = None
-) -> bool:
-    """Sets the new code period at global level or for a project"""
+def set_new_code_period(endpoint: Platform, nc_type: str, nc_value: Union[int, str], component: Optional[Component] = None) -> bool:
+    """Sets the new code period at global level or for a project/branch"""
     # The api/new_code_periods/set endpoint expects NUMBER_OF_DAYS; older code paths and
     # exports pass the legacy alias DAYS. Normalize so both keep working.
     if nc_type == "DAYS":
         nc_type = "NUMBER_OF_DAYS"
-    log.debug("Setting new code period for project '%s' branch '%s' to value '%s = %s'", str(project_key), str(branch), str(nc_type), str(nc_value))
+    branch = component.branch if component is not None else None
+    log.debug("Setting new code period for component '%s' branch '%s' to value '%s = %s'", str(component), str(branch), str(nc_type), str(nc_value))
     if endpoint.is_sonarcloud():
-        if project_key is None:
+        if component is None:
             # Org-level on SQC goes through the v2 organizations PATCH endpoint, not the
             # legacy sonar.leak.period.* settings (which the platform silently ignores).
             from sonar import organizations  # lazy import to avoid potential cycles
 
             org = organizations.Organization.get_object(endpoint, endpoint.organization)
             return org.set_new_code_period(nc_type, nc_value)
-        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=project_key)
+        component_key = component.project.key if component is not None else None
+        api, _, params1, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period.type", value=nc_type, project=component_key)
         ok = endpoint.post(api, params=params1).ok
-        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=project_key)
+        api, _, params2, _ = endpoint.api.get_details(Setting, Oper.CREATE, key="sonar.leak.period", value=nc_value, project=component_key)
         ok = ok and endpoint.post(api, params=params2).ok
     else:
+        component_key = component.project.key if component is not None else None
         api, _, params, _ = endpoint.api.get_details(
-            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=project_key, branch=branch
+            Setting, Oper.SET_NEW_CODE_PERIOD, type=nc_type, value=nc_value, project=component_key, branch=branch
         )
         ok = endpoint.post(api, params=params).ok
     if ok:
-        cached = Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, project_key, branch)
+        cached = Setting.CACHE.get(endpoint.local_url, NEW_CODE_PERIOD, component, branch)
         if cached:
             cached.refresh()
     return ok
 
 
-def set_visibility(endpoint: Platform, visibility: str, component: Optional[str] = None) -> bool:
+def set_visibility(endpoint: Platform, visibility: str, component: Optional[Component] = None) -> bool:
     """Sets the platform global default visibility or component visibility"""
     if component:
         log.debug("Setting setting '%s' of %s to value '%s'", COMPONENT_VISIBILITY, str(component), visibility)
-        return endpoint.post("projects/update_visibility", params={"project": component, "visibility": visibility}).ok
+        return endpoint.post("projects/update_visibility", params={"project": component.project.key, "visibility": visibility}).ok
     log.debug("Setting setting '%s' to value '%s'", PROJECT_DEFAULT_VISIBILITY, str(visibility))
     return endpoint.post("projects/update_default_visibility", params={"projectVisibility": visibility}).ok
 
 
-def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[str] = None, branch: Optional[str] = None) -> bool:
+def set_setting(endpoint: Platform, key: str, value: Any, component: Optional[Component] = None) -> bool:
     """Sets a setting to a particular value"""
     try:
         log.debug("Setting %s with value %s (for component %s)", key, value, component)
-        s = Setting.get_object(endpoint, key, component, branch)
+        s = Setting.get_object(endpoint, key, component)
         if not s:
             log.warning("Setting '%s' does not exist on target platform, it cannot be set", key)
             return False
@@ -612,16 +625,32 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     return setting_value
 
 
-def get_settings_data(endpoint: Platform, key: str, component: Optional[str], branch: Optional[str]) -> ApiPayload:
+def _get_setting_via_values_api(endpoint: Platform, key: str, component_key: Optional[str], branch: Optional[str], component: Optional[Component]) -> tuple:
+    """Fetches a setting via settings/values API, returns (resolved_key, data)"""
+    if key == NEW_CODE_PERIOD:
+        key = "sonar.leak.period.type"
+    params = {"component": component_key, "branch": branch, "keys": key}
+    api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
+    data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
+    if not data and component is None:
+        raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
+    return key, (data[0] if not endpoint.is_sonarcloud() and data else {"inherited": True})
+
+
+def get_settings_data(endpoint: Platform, key: str, component: Optional[Component]) -> ApiPayload:
     """Reads a setting data with different API depending on setting key
 
     :param endpoint: The SonarQube Platform object
     :param key: The setting key
-    :param component: The component (Project) concerned, optional
+    :param component: The component (Project, Branch, etc.) concerned, or None for global settings
     :return: The returned API data
     """
-    if key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
-        params = {"project": component, "branch": branch}
+    branch = component.branch if component is not None else None
+    component_key = component.project.key if component is not None else None
+    if key == COMPONENT_VISIBILITY:
+        data = json.loads(endpoint.get("components/show", params={"component": component_key}).text)["component"]
+    elif key == NEW_CODE_PERIOD and not endpoint.is_sonarcloud():
+        params = {"project": component_key, "branch": branch}
         api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET_NEW_CODE_PERIOD, **params)
         data = json.loads(endpoint.get(api, params=api_params).text)
     elif key == MQR_ENABLED:
@@ -631,12 +660,5 @@ def get_settings_data(endpoint: Platform, key: str, component: Optional[str], br
         api, _, params, _ = endpoint.api.get_details(Setting, Oper.GET, keys=AI_CODE_FIX)
         data = json.loads(endpoint.get(api, params=params).text)
     else:
-        if key == NEW_CODE_PERIOD:
-            key = "sonar.leak.period.type"
-        params = {"component": component, "branch": branch, "keys": key}
-        api, _, api_params, _ = endpoint.api.get_details(Setting, Oper.GET, **params)
-        data = json.loads(endpoint.get(api, params=api_params, with_organization=(component is None)).text)["settings"]
-        if len(data) == 0 and component is None:
-            raise exceptions.ObjectNotFound(key, f"Setting '{key}' not found")
-        data = data[0] if not endpoint.is_sonarcloud() and len(data) > 0 else {"inherited": True}
+        key, data = _get_setting_via_values_api(endpoint, key, component_key, branch, component)
     return data | {"key": key, "component": component, "branch": branch}

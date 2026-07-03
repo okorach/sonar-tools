@@ -83,6 +83,7 @@ class Component(SqObject):
             self._last_analysis = sutil.string_to_datetime(data[key])
         return self
 
+    @property
     def project(self) -> Component:
         """Implemented in relevant subclasses (Project, Branch, PullRequest, Application, ApplicationBranch)"""
         return self
@@ -119,7 +120,7 @@ class Component(SqObject):
         """Returns the count of issues of a component for a given ruleset"""
         from sonar.issues import count_by_rule
 
-        key = self.project().key
+        key = self.project.key
         params = {"components": key} if self.endpoint.version() >= (10, 0, 0) else {"componentKeys": key}
         params = search_params | params | {"facets": "rules", "rules": [r.key for r in ruleset]}
         return {k: v for k, v in count_by_rule(endpoint=self.endpoint, **params).items() if v > 0}
@@ -159,7 +160,7 @@ class Component(SqObject):
 
     def get_navigation_data(self) -> ApiPayload:
         """Returns a component navigation data"""
-        data = json.loads(self.get("navigation/component", params={"component": self.project().key, "branch": self.branch}).text)
+        data = json.loads(self.get("navigation/component", params={"component": self.project.key, "branch": self.branch}).text)
         self.reload(data)
         return data
 
@@ -181,7 +182,7 @@ class Component(SqObject):
     def new_code_start_date(self) -> Optional[datetime]:
         """Returns the new code period start date of a component or None if this component has no new code start date"""
         if self._new_code_start_date is None:
-            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, component=self.project().key)
+            api, _, api_params, ret = self.endpoint.api.get_details(self, Oper.GET, component=self.project.key)
             data = json.loads(self.get(api, params=api_params).text)[ret]
             self.sq_json |= data
             if "leakPeriodDate" in data:
@@ -195,19 +196,19 @@ class Component(SqObject):
     def visibility(self) -> str:
         """Returns a component visibility (public or private)"""
         if not self._visibility:
-            self._visibility = settings.Setting.get_visibility(self.endpoint, self.key).value
+            self._visibility = settings.Setting.get_visibility(self.endpoint, self).value
         return self._visibility
 
     def set_visibility(self, visibility: str) -> None:
         """Sets a component visibility (public or private)"""
         if visibility:
-            settings.set_visibility(self.endpoint, visibility=visibility, component=self.key)
+            settings.set_visibility(self.endpoint, visibility=visibility, component=self)
             self._visibility = visibility
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a component analyses"""
         log.debug("%s: Getting history of analyses", self)
-        params = search_params | {"project": self.project().key, "branch": self.branch} if self.branch else {"project": self.project().key}
+        params = search_params | {"project": self.project.key, "branch": self.branch} if self.branch else {"project": self.project.key}
         data = self.endpoint.get_paginated("project_analyses/search", return_field="analyses", **params)["analyses"]
         if filter_in and len(filter_in) > 0:
             data = [d for d in data if any(e["category"] in filter_in for e in d["events"])]
@@ -232,7 +233,7 @@ class Component(SqObject):
         if version >= (2025, 1, 0):
             api = "project_branches/get_ai_code_assurance"
         try:
-            return str(json.loads(self.get(api, params={"project": self.project().key, "branch": self.branch}).text)["aiCodeAssurance"]).upper()
+            return str(json.loads(self.get(api, params={"project": self.project.key, "branch": self.branch}).text)["aiCodeAssurance"]).upper()
         except (ConnectionError, RequestException) as e:
             sutil.handle_error(e, f"getting AI code assurance of {self}", catch_all=True)
             if "Unknown url" in sutil.error_msg(e):

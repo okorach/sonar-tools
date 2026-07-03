@@ -64,7 +64,7 @@ class PullRequest(Component):
 
     def __str__(self) -> str:
         """Returns string representation of the PR"""
-        return f"pull request key '{self.key}' of {self.project()!s}"
+        return f"pull request key '{self.key}' of {self.project!s}"
 
     @staticmethod
     def hash_payload(data: ApiPayload) -> tuple[Any, ...]:
@@ -73,7 +73,7 @@ class PullRequest(Component):
 
     def hash_object(self) -> tuple[Any, ...]:
         """Computes a uuid for the branch that can serve as index"""
-        return (self.concerned_object.key, self.key)
+        return (self.project.key, self.key)
 
     @classmethod
     def get_object(cls, endpoint: Platform, project: Union[proj.Project, str], pull_request_key: str, use_cache: bool = True) -> PullRequest:
@@ -135,14 +135,15 @@ class PullRequest(Component):
 
     def url(self) -> str:
         """Returns the PR permalink (until PR is purged)"""
-        return f"{self.concerned_object.url()}&pullRequest={requests.utils.quote(self.key)}"
+        return f"{self.project.url()}&pullRequest={requests.utils.quote(self.key)}"
 
     def get_tags(self, **kwargs) -> list[str]:
         """:return: The tags of the project corresponding to the PR"""
-        return self.concerned_object.get_tags(**kwargs)
+        return self.project.get_tags(**kwargs)
 
+    @property
     def project(self) -> Component:
-        """Returns the project"""
+        """Returns the parent project"""
         return self.concerned_object
 
     def audit(self, audit_settings: ConfigSettings) -> list[Problem]:
@@ -162,40 +163,40 @@ class PullRequest(Component):
 
     def project_key(self) -> str:
         """Returns the project key"""
-        return self.concerned_object.key
+        return self.project.key
 
     def delete(self) -> bool:
         """Deletes a pull request"""
-        return self.delete_object(project=self.concerned_object.key, pullRequest=self.key)
+        return self.delete_object(project=self.project.key, pullRequest=self.key)
 
     def get_issues(self, **search_params: Any) -> dict[str, Issue]:
         """Returns a list of issues on a PR"""
         from sonar.issues import Issue
 
         return Issue.search_by_project(
-            self.endpoint, project=self.concerned_object.key, raise_error=False, **(search_params | {"pullRequest": self.key})
+            self.endpoint, project=self.project.key, raise_error=False, **(search_params | {"pullRequest": self.key})
         )
 
     def get_hotspots(self, **search_params: Any) -> dict[str, Hotspot]:
         """Returns a list of hotspots on a PR"""
         from sonar.hotspots import Hotspot
 
-        return Hotspot.search(self.endpoint, **(search_params | {"project": self.concerned_object.key, "pullRequest": self.key}))
+        return Hotspot.search(self.endpoint, **(search_params | {"project": self.project.key, "pullRequest": self.key}))
 
     def get_findings(self, **search_params: Any) -> dict[str, Union[Issue, Hotspot]]:
         """Returns a list of findings, issues and hotspots together on a PR"""
-        return self.concerned_object.get_findings(**(search_params | {"pullRequest": self.key}))
+        return self.project.get_findings(**(search_params | {"pullRequest": self.key}))
 
     def get_dependency_risks(self, **search_params: Any) -> dict[str, DependencyRisk]:
         """Returns the SCA dependency risks for this pull request"""
         from sonar.dependency_risks import DependencyRisk
 
         new_params = {k: v for k, v in search_params.items() if k not in ("project", "application", "portfolio", "branch", "pullRequest", "types")}
-        return DependencyRisk.search(self.endpoint, project_key=self.concerned_object.key, pull_request=self.key, **new_params)
+        return DependencyRisk.search(self.endpoint, project_key=self.project.key, pull_request=self.key, **new_params)
 
     def get_measures_history(self, metrics_list: list[str]) -> dict[str, str]:
         """Returns the history of a project metrics"""
-        return measures.get_history(self, metrics_list, component=self.concerned_object.key, pullRequest=self.key)
+        return measures.get_history(self, metrics_list, component=self.project.key, pullRequest=self.key)
 
     def get_analyses(self, filter_in: Optional[list[str]] = None, filter_out: Optional[list[str]] = None, **search_params: Any) -> ApiPayload:
         """Returns a projects analyses"""

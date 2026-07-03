@@ -72,7 +72,7 @@ def __get_measures(obj: object, wanted_metrics: types.KeyList, convert_options: 
 
         sep = "|" if convert_options[options.CSV_SEPARATOR] == "," else ","
         if obj.__class__.__name__ == "Branch":
-            measures_d["tags"] = sep.join(obj.concerned_object.get_tags())
+            measures_d["tags"] = sep.join(obj.project.get_tags())
         else:
             measures_d["tags"] = sep.join(obj.get_tags())
     except (ConnectionError, RequestException) as e:
@@ -299,7 +299,7 @@ def main() -> None:
 
         if file:
             log.info("File '%s' created", file)
-        nb_proj = len({obj.concerned_object if obj.concerned_object is not None else obj for obj in obj_list})
+        nb_proj = len({obj.project for obj in obj_list})
         nb_branches = len(obj_list)
         log.info("%d %s, %d branches exported from %s", nb_proj, kwargs[options.COMPONENT_TYPE], nb_branches, kwargs[options.URL])
     except exceptions.SonarException as e:
