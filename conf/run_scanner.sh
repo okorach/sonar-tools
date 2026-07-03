@@ -98,7 +98,7 @@ else
 fi
 
 echo "=============================================================="
-echo "Running: ${cmd}" | sed "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g"
+echo "Running: ${cmd}" | sed -e "s/${SONAR_TOKEN}/<SONAR_TOKEN>/g" -e "s/-Dsonar.login=[a-zA-Z0-9]*/-Dsonar.login=<SONAR_TOKEN>/g" -e "s/-Dsonar.token=[a-zA-Z0-9]*/-Dsonar.token=<SONAR_TOKEN>/g"
 echo "=============================================================="
 
 cd "${ROOT_DIR}" || exit 1
