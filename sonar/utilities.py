@@ -29,7 +29,6 @@ import sys
 from http import HTTPStatus
 from typing import Any, Optional, Union
 
-import Levenshtein
 import requests
 
 import cli.options as opt
@@ -476,12 +475,40 @@ def flatten(original_dict: dict[str, any]) -> dict[str, any]:
     return flat_dict
 
 
+def levenshtein_distance(s1: str, s2: str, score_cutoff: Optional[int] = None) -> int:
+    """Returns the Levenshtein edit distance between two strings.
+    When score_cutoff is set, returns score_cutoff + 1 as soon as the distance is guaranteed to exceed it.
+    """
+    if s1 == s2:
+        return 0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0:
+        return len2
+    if len2 == 0:
+        return len1
+    if score_cutoff is not None and abs(len1 - len2) > score_cutoff:
+        return score_cutoff + 1
+    prev_row = list(range(len2 + 1))
+    for i in range(1, len1 + 1):
+        curr_row = [i] + [0] * len2
+        for j in range(1, len2 + 1):
+            if s1[i - 1] == s2[j - 1]:
+                curr_row[j] = prev_row[j - 1]
+            else:
+                curr_row[j] = 1 + min(prev_row[j], curr_row[j - 1], prev_row[j - 1])
+        if score_cutoff is not None and min(curr_row) > score_cutoff:
+            return score_cutoff + 1
+        prev_row = curr_row
+    dist = prev_row[len2]
+    return score_cutoff + 1 if score_cutoff is not None and dist > score_cutoff else dist
+
+
 def similar_strings(key1: str, key2: str, max_distance: int = 5) -> bool:
     """Returns whether 2 project keys are similar, but not equal"""
     if key1 == key2:
         return False
     max_distance = min(len(key1) // 2, len(key2) // 2, max_distance)
-    return (len(key2) >= 7 and (re.match(key2, key1))) or Levenshtein.distance(key1, key2, score_cutoff=6) <= max_distance
+    return (len(key2) >= 7 and (re.match(key2, key1))) or levenshtein_distance(key1, key2, score_cutoff=6) <= max_distance
 
 
 def perms_to_list(perms: dict[str, Any]) -> list[str, Any]:
