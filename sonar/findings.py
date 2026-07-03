@@ -27,8 +27,6 @@ import json
 import re
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-import Levenshtein
-
 import sonar.logging as log
 import sonar.util.issue_defs as idefs
 import sonar.util.misc as util
@@ -456,7 +454,7 @@ class Finding(SqObject):
         if self.message == another_finding.message or kwargs.get("ignore_message", False):
             score += 2
             match_msg += " message +2"
-        elif Levenshtein.distance(self.message, another_finding.message, score_cutoff=6) <= 5:
+        elif sutil.levenshtein_distance(self.message, another_finding.message, score_cutoff=6) <= 5:
             score += 1
             match_msg += " message +1"
         if self.file == another_finding.file:
