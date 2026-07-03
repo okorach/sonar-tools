@@ -26,6 +26,8 @@ from sonar import settings, exceptions
 
 def test_set_single_valued() -> None:
     """test_set_single_valued_setting"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.dbcleaner.daysBeforeDeletingClosedIssues")
     assert o.value == 30
     assert o.set(60)
@@ -36,6 +38,8 @@ def test_set_single_valued() -> None:
 
 def test_set_boolean() -> None:
     """test_set_boolean_setting"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.cpd.cross_project")
     assert o.value is False
     assert o.set(True)
@@ -46,6 +50,8 @@ def test_set_boolean() -> None:
 
 def test_multi_valued() -> None:
     """test_multi_valued"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.java.file.suffixes", tutil.PROJECT_1)
     assert o.set([".jav", ".java", ".javacard"])
     assert sorted(o.value) == sorted([".jav", ".java", ".javacard"])
@@ -77,6 +83,8 @@ def test_autodetect_ai() -> None:
 
 def test_mqr_mode() -> None:
     """test_mqr_mode"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.multi-quality-mode.enabled")
     if tutil.SQ.version() < (25, 0, 0):
         assert o is None
@@ -91,6 +99,8 @@ def test_mqr_mode() -> None:
 
 def test_unsettable() -> None:
     """test_unsettable"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.core.startTime")
     assert o is not None
     assert not o.set("2025-01-01")
@@ -102,6 +112,8 @@ def test_unsettable() -> None:
 
 def test_is_default_value() -> None:
     """test_is_default_value"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarQube Server-only setting")
     o = settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes")
     assert o is not None
     assert o.is_default_value()
@@ -113,6 +125,8 @@ def test_is_default_value() -> None:
 
 def test_visi_cache() -> None:
     """test_visi_cache"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Project default visibility not supported on SonarQube Cloud")
     o = settings.Setting.get_visibility(tutil.SQ)
     assert o is not None
     assert settings.Setting.get_visibility(tutil.SQ) is o
@@ -120,6 +134,8 @@ def test_visi_cache() -> None:
 
 def test_set_visibility() -> None:
     """test_set_visibility"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("Project visibility API not available on SonarQube Cloud")
     settings.set_visibility(tutil.SQ, "private", component=tutil.PROJECT_1)
     o = settings.Setting.get_visibility(tutil.SQ, component=tutil.PROJECT_1)
     assert o.value == "private"
@@ -133,6 +149,8 @@ def test_set_visibility() -> None:
 
 def test_set_new_code_period() -> None:
     """test_set_new_code_period"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("New code period project settings use different API on SonarQube Cloud")
     assert settings.set_new_code_period(tutil.SQ, "NUMBER_OF_DAYS", 42, project_key=tutil.PROJECT_1)
     o = settings.get_new_code_period(tutil.SQ, component=tutil.PROJECT_1)
     assert o.value == "NUMBER_OF_DAYS = 42"
@@ -150,7 +168,8 @@ def test_is_internal() -> None:
     """test_is_internal"""
     name = "sonar.filesize.limit" if tutil.SQ.is_sonarcloud() else "sonar.plugins.risk.consent"
     assert settings.Setting.get_object(tutil.SQ, name).is_internal()
-    assert not settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes").is_internal()
+    if not tutil.SQ.is_sonarcloud():
+        assert not settings.Setting.get_object(tutil.SQ, "sonar.python.file.suffixes").is_internal()
 
 
 def test_set_non_existing() -> None:

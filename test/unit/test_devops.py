@@ -47,6 +47,8 @@ def test_get_list() -> None:
 
 def test_get_object_gh() -> None:
     """test_get_object_gh"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GH_KEY)
     assert plt.url == "https://api.github.com"
     if tutil.SQ.version() >= (10, 0, 0):
@@ -58,12 +60,16 @@ def test_get_object_gh() -> None:
 
 def test_get_object_gh_refresh() -> None:
     """test_get_object_gh"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GH_KEY)
     assert plt.refresh()
 
 
 def test_get_object_ado() -> None:
     """test_get_object_ado"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=ADO_KEY)
     assert plt.url == "https://dev.azure.com/olivierkorach"
     assert str(plt) == f"devops platform '{ADO_KEY}'"
@@ -71,6 +77,8 @@ def test_get_object_ado() -> None:
 
 def test_get_object_gl() -> None:
     """test_get_object_gl"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     plt = devops.DevopsPlatform.get_object(endpoint=tutil.SQ, key=GL_KEY)
     assert plt.url == "https://gitlab.com/api/v4"
     assert str(plt) == f"devops platform '{GL_KEY}'"
@@ -78,6 +86,8 @@ def test_get_object_gl() -> None:
 
 def test_count() -> None:
     """Verify count works"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     assert devops.count(tutil.SQ, "azure") == 1
     assert devops.count(tutil.SQ, "gitlab") == 1
     assert devops.count(tutil.SQ, "bitbucket") == 1
@@ -91,6 +101,8 @@ def test_count() -> None:
 
 def test_exists() -> None:
     """test_exists"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     for k in GH_KEY, GL_KEY, ADO_KEY:
         assert devops.DevopsPlatform.exists(endpoint=tutil.SQ, key=k)
     for k in "foo", "bar":
@@ -99,6 +111,8 @@ def test_exists() -> None:
 
 def test_devops_type() -> None:
     """test_devops_type"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("DevOps platform API not available on SonarQube Cloud")
     assert devops.devops_type(endpoint=tutil.SQ, key=GH_KEY) == "github"
     assert devops.devops_type(endpoint=tutil.SQ, key=GL_KEY) == "gitlab"
     assert devops.devops_type(endpoint=tutil.SQ, key=ADO_KEY) == "azure"

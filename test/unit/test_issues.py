@@ -327,7 +327,10 @@ def test_get_facets() -> None:
     facet = "fileUuids" if tutil.SQ.is_sonarcloud() else "files"
     facets = issues._get_facets(tutil.SQ, facet=facet, project_key=tutil.LIVE_PROJECT, raise_error=False)
     assert len(facets) > 0
-    assert any(f.endswith(".py") for f in facets)
+    if tutil.SQ.is_sonarcloud():
+        assert any(isinstance(v, dict) and v.get("path", "").endswith(".py") for v in facets.values())
+    else:
+        assert any(f.endswith(".py") for f in facets)
 
 
 def test_search_by_small() -> None:
@@ -388,6 +391,8 @@ def test_comments_after() -> None:
 
 def test_too_many_facets() -> None:
     """test_too_many_facets"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("SonarCloud recursively splits searches instead of raising TooManyFacetsError")
     with pytest.raises(issues.TooManyFacetsError):
         Issue.search_by_date(tutil.SQ, raise_error=True, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project=_FLAT_12K_PROJECT)
 

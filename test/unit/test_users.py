@@ -37,6 +37,8 @@ USER = credentials.ADMIN_USER
 
 def test_get_object() -> None:
     """Test get_object and verify that if requested twice the same object is returned"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("User management API not available on SonarQube Cloud")
     users.User.CACHE.clear()
     for _ in range(2):
         user = users.User.get_object(endpoint=tutil.SQ, login=USER)
@@ -124,6 +126,8 @@ def test_scm_accounts(get_test_user: Generator[users.User]) -> None:
 
 def test_audit_user() -> None:
     """audit_user"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("User management API not available on SonarQube Cloud")
     logging.set_logger(tutil.TEST_LOGFILE)
     logging.set_debug_level("DEBUG")
     user = users.User.get_object(tutil.SQ, credentials.ADMIN_USER)
@@ -203,6 +207,8 @@ def test_set_groups(get_test_user: Generator[users.User]) -> None:
 
 
 def test_import() -> None:
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("User management API not available on SonarQube Cloud")
     data = {}
     users.import_config(tutil.SQ, data)
     now_str = {str(datetime.now()).replace(" ", "-").replace(":", "-")}
@@ -234,5 +240,7 @@ def test_deactivate(get_test_user: Generator[users.User]) -> None:
 
 def test_login_from_name_not_found() -> None:
     """test_login_from_name_not_found"""
+    if tutil.SQ.is_sonarcloud():
+        pytest.skip("User management API not available on SonarQube Cloud")
     assert users.get_login_from_name(tutil.SQ, "nonexisting") is None
     assert users.get_login_from_name(tutil.SQ, "olivier") == "olivier"
