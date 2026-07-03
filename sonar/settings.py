@@ -398,16 +398,16 @@ class Setting(SqObject):
                 lang = "javascript"
             return (LANGUAGES_SETTINGS, lang)
         if re.match(
-            r"^.*\.([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat)\..*$",
+            r"([lL]int|govet|flake8|checkstyle|pmd|spotbugs|findbugs|phpstan|psalm|detekt|bandit|rubocop|scalastyle|scapegoat)\.",
             self.key,
         ):
             return (LINTER_SETTINGS, None)
         if re.match(r"^sonar\.security\.config\..+$", self.key):
             return (SAST_CONFIG_SETTINGS, None)
-        if re.match(r"^sonar\.(.*\.)?(exclusions|inclusions|issue\..+)$", self.key):
+        if re.match(r"\.(exclusions|inclusions|issue\..+)$", self.key):
             return (ANALYSIS_SCOPE_SETTINGS, None)
 
-        if re.match(r"^.*\.(reports?Paths?|unit\..*|cov.*)$", self.key):
+        if re.match(r"\.(reports?Paths?|unit\..*|cov.*)$", self.key):
             return (TEST_SETTINGS, None)
         if re.match(r"^sonar\.(auth\.|authenticator\.downcase).*$", self.key):
             return (AUTH_SETTINGS, None)
