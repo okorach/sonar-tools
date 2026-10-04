@@ -21,6 +21,8 @@
 """Test of the issues module and class, as well as changelog"""
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 import pytest
 
 from requests.exceptions import ConnectionError
@@ -543,6 +545,30 @@ def test_apply_event_false_positive() -> None:
     assert issue.is_false_positive()
     # Restore
     issue.reopen()
+
+
+def test_apply_event_assign_does_not_resolve_target_user() -> None:
+    """ASSIGN changelog events must not try to resolve the source assignee into a target
+    user (source and target platforms may have completely different user bases): no call
+    to assign(), just an attributed comment naming the source assignee."""
+    from sonar import syncer
+    from sonar.changelog import Changelog
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue = list(issues_d.values())[0]
+
+    assign_event = Changelog(
+        {"creationDate": "2026-01-01T00:00:00+0000", "user": "srcuser", "diffs": [{"key": "assignee", "newValue": "Some Source User"}]},
+        concerned_object=issue,
+    )
+
+    settings = {syncer.SYNC_ASSIGN: True}
+    with patch.object(issue, "assign") as mock_assign, patch.object(issue, "add_comment", return_value=True) as mock_comment:
+        result = issue._Issue__apply_event(assign_event, settings)
+
+    assert result is True
+    mock_assign.assert_not_called()
+    mock_comment.assert_called_once_with("srcuser on 2026-01-01 00:00:00: Assigned to Some Source User")
 
 
 def test_apply_changelog() -> None:

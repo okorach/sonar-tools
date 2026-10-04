@@ -28,7 +28,6 @@ from typing import TYPE_CHECKING, Any, Union
 
 import sonar.logging as log
 import sonar.util.misc as util
-import sonar.utilities as sutil
 from sonar import exceptions, findings
 
 if TYPE_CHECKING:
@@ -81,11 +80,13 @@ def attributed_comment(comment: dict[str, Any]) -> str:
     """Returns a copied comment's text annotated with its original author and date.
 
     The target API call creating the comment is made by the sync service account at sync
-    time, so without this the comment's real author and date would otherwise be lost.
+    time, so without this the comment's real author and date would otherwise be lost. The
+    source user's name is used as-is: no attempt is made to resolve it to a target-platform
+    user, since the source and target platforms may have completely different user bases.
     """
-    original_date = sutil.date_to_string(comment.get("date"), with_time=True)
+    original_date = comment["date"].strftime("%Y-%m-%d %H:%M:%S") if comment.get("date") else ""
     original_user = comment.get("user", "")
-    return f"{comment['value']}\n\n_(Original comment by {original_user} on {original_date})_"
+    return f"{original_user} on {original_date}: {comment['value']}"
 
 
 def __delete_sync_comments(finding: findings.Finding) -> None:

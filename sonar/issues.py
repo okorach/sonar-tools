@@ -36,7 +36,7 @@ import sonar.logging as log
 import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import changelog, config, errcodes, exceptions, findings, rules, users
+from sonar import changelog, config, errcodes, exceptions, findings, rules
 from sonar.api.manager import ApiOperation as Oper
 from sonar.projects import Project
 from sonar.util import cache
@@ -797,11 +797,10 @@ class Issue(findings.Finding):
             self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
+            # Not resolved into an actual target assignee: source and target platforms may have
+            # completely different user bases, so the assignee name is only reported as a comment.
             if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(endpoint=self.endpoint, name=data)
-                if u:
-                    self.assign(u)
-                # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+                self.add_comment(syncer.attributed_comment({"user": event.author(), "date": event.date_time(), "value": f"Assigned to {data}"}))
         elif event_type == "UNASSIGN":
             self.unassign()
         elif event_type == "TAG":

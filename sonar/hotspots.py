@@ -31,7 +31,7 @@ import sonar.logging as log
 import sonar.util.issue_defs as idefs
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import changelog, exceptions, findings, rules, users
+from sonar import changelog, exceptions, findings, rules
 from sonar.api.manager import ApiOperation as Oper
 from sonar.util import cache
 from sonar.util import constants as c
@@ -281,10 +281,10 @@ class Hotspot(findings.Finding):
                 self.add_comment("Original hotspot status was changed to ACKNOWLEDGED, but this status is not supported in SonarQube Cloud")
             # self.add_comment(f"Hotspot marked as acknowledged {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
+            # Not resolved into an actual target assignee: source and target platforms may have
+            # completely different user bases, so the assignee name is only reported as a comment.
             if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(endpoint=self.endpoint, name=data) or settings[syncer.SYNC_SERVICE_ACCOUNT]
-                self.assign(u)
-                # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
+                self.add_comment(syncer.attributed_comment({"user": event.author(), "date": event.date_time(), "value": f"Assigned to {data}"}))
         elif event_type == "UNASSIGN":
             self.unassign()
         elif event_type == "INTERNAL":
