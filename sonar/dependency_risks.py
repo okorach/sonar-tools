@@ -527,11 +527,11 @@ class DependencyRisk(SqObject):
         else:
             return True
 
-    def assign(self, assignee_name: str, settings: ConfigSettings, syncer: Any, users: Any) -> bool:
+    def assign(self, assignee_name: str, settings: ConfigSettings, syncer_mod: Any, users_mod: Any) -> bool:
         """Applies an assignee change."""
-        if not settings.get(syncer.SYNC_ASSIGN, True):
+        if not settings.get(syncer_mod.SYNC_ASSIGN, True):
             return False
-        login = users.get_login_from_name(endpoint=self.endpoint, name=assignee_name)
+        login = users_mod.get_login_from_name(endpoint=self.endpoint, name=assignee_name)
         if not login:
             return False
         try:
