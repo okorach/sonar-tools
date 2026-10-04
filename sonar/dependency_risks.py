@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import sonar.logging as log
 import sonar.util.issue_defs as idefs
-from sonar import exceptions
+from sonar import exceptions, syncer
 from sonar.api.manager import ApiOperation as Oper
 from sonar.dependency_risk_changelog import DependencyRiskChangelog
 from sonar.sqobject import SqObject
@@ -566,8 +566,6 @@ class DependencyRisk(SqObject):
             log.info("Source %s has no comments after target %s last comment (%s)", source, self, last_target_comment)
         else:
             log.info("Applying %d comments of %s to %s", len(comment_events), source, self)
-            from sonar import syncer
-
             for key in sorted(comment_events.keys()):
                 self.add_comment(syncer.attributed_comment(comment_events[key]))
                 counter += 1

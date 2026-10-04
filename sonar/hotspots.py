@@ -31,7 +31,7 @@ import sonar.logging as log
 import sonar.util.issue_defs as idefs
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import changelog, exceptions, findings, rules
+from sonar import changelog, exceptions, findings, rules, syncer
 from sonar.api.manager import ApiOperation as Oper
 from sonar.util import cache
 from sonar.util import constants as c
@@ -317,8 +317,6 @@ class Hotspot(findings.Finding):
             log.info(msg, source_hotspot, self, last_target_change, "comment")
         else:
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
-            from sonar import syncer
-
             for key in sorted(events.keys()):
                 self.add_comment(syncer.attributed_comment(events[key]))
                 counter += 1
