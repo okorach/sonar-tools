@@ -36,7 +36,7 @@ import sonar.logging as log
 import sonar.util.constants as c
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import changelog, config, errcodes, exceptions, findings, rules, users
+from sonar import changelog, config, errcodes, exceptions, findings, rules, syncer
 from sonar.api.manager import ApiOperation as Oper
 from sonar.projects import Project
 from sonar.util import cache
@@ -746,8 +746,6 @@ class Issue(findings.Finding):
             return False
 
     def __apply_event(self, event: changelog.Changelog, settings: ConfigSettings) -> bool:
-        from sonar import syncer
-
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
         log.debug("Applying event type %s - %s", event_type, str(event))
@@ -797,11 +795,10 @@ class Issue(findings.Finding):
             self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
-            if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(endpoint=self.endpoint, name=data)
-                if u:
-                    self.assign(u)
-                # self.add_comment(f"Issue assigned {origin}", settings[SYNC_ADD_COMMENTS])
+            # Not applied nor commented: source and target platforms may have completely
+            # different user bases, so the source assignee is neither resolved into a target
+            # user nor reported as a comment (only actual human comments are migrated as such).
+            log.debug("Assignment changelog %s is not applied", str(event))
         elif event_type == "UNASSIGN":
             self.unassign()
         elif event_type == "TAG":
@@ -849,7 +846,7 @@ class Issue(findings.Finding):
         else:
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_issue, self, last_target_change)
             for key in sorted(events.keys()):
-                self.add_comment(events[key]["value"])
+                self.add_comment(syncer.attributed_comment(events[key]))
                 counter += 1
         return counter
 

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import traceback
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Union
 
 import sonar.logging as log
 import sonar.util.misc as util
@@ -74,6 +74,19 @@ _SYNC_COMMENT_PREFIXES = (
 def __is_sync_comment(text: str) -> bool:
     """Returns whether a comment is an auto-generated sync link comment."""
     return any(text.startswith(prefix) for prefix in _SYNC_COMMENT_PREFIXES)
+
+
+def attributed_comment(comment: dict[str, Any]) -> str:
+    """Returns a copied comment's text annotated with its original author and date.
+
+    The target API call creating the comment is made by the sync service account at sync
+    time, so without this the comment's real author and date would otherwise be lost. The
+    source user's name is used as-is: no attempt is made to resolve it to a target-platform
+    user, since the source and target platforms may have completely different user bases.
+    """
+    original_date = comment["date"].strftime("%Y-%m-%d %H:%M:%S") if comment.get("date") else ""
+    original_user = comment.get("user", "")
+    return f"{original_user} on {original_date}: {comment['value']}"
 
 
 def __delete_sync_comments(finding: findings.Finding) -> None:
@@ -340,6 +353,10 @@ def __sync_comments_bidirectional(finding_a: findings.Finding, finding_b: findin
     """Syncs comments bidirectionally between two findings using content-based dedup.
 
     Returns the number of comments added.
+
+    Unlike apply_changelog(), comments copied here are NOT run through attributed_comment():
+    dedup below relies on byte-exact value matching across runs, and an attribution suffix
+    would never match the original, re-adding the comment (with a new suffix) on every sync.
     """
     count = 0
     comments_a = finding_a.comments()

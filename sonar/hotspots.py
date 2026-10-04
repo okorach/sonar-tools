@@ -31,7 +31,7 @@ import sonar.logging as log
 import sonar.util.issue_defs as idefs
 import sonar.util.misc as util
 import sonar.utilities as sutil
-from sonar import changelog, exceptions, findings, rules, users
+from sonar import changelog, exceptions, findings, rules, syncer
 from sonar.api.manager import ApiOperation as Oper
 from sonar.util import cache
 from sonar.util import constants as c
@@ -261,8 +261,6 @@ class Hotspot(findings.Finding):
 
     def __apply_event(self, event: object, settings: ConfigSettings) -> bool:
         """Applies a changelog event (transition, comment, assign) to the hotspot"""
-        from sonar import syncer
-
         log.debug("Applying event %s", str(event))
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
@@ -281,10 +279,10 @@ class Hotspot(findings.Finding):
                 self.add_comment("Original hotspot status was changed to ACKNOWLEDGED, but this status is not supported in SonarQube Cloud")
             # self.add_comment(f"Hotspot marked as acknowledged {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
-            if settings[syncer.SYNC_ASSIGN]:
-                u = users.get_login_from_name(endpoint=self.endpoint, name=data) or settings[syncer.SYNC_SERVICE_ACCOUNT]
-                self.assign(u)
-                # self.add_comment(f"Hotspot assigned assigned {origin}", settings[SYNC_ADD_COMMENTS])
+            # Not applied nor commented: source and target platforms may have completely
+            # different user bases, so the source assignee is neither resolved into a target
+            # user nor reported as a comment (only actual human comments are migrated as such).
+            log.debug("Assignment changelog %s is not applied", str(event))
         elif event_type == "UNASSIGN":
             self.unassign()
         elif event_type == "INTERNAL":
@@ -320,7 +318,7 @@ class Hotspot(findings.Finding):
         else:
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_hotspot, self, last_target_change)
             for key in sorted(events.keys()):
-                self.add_comment(events[key]["value"])
+                self.add_comment(syncer.attributed_comment(events[key]))
                 counter += 1
         return counter
 
