@@ -568,8 +568,10 @@ class DependencyRisk(SqObject):
             log.info("Source %s has no comments after target %s last comment (%s)", source, self, last_target_comment)
         else:
             log.info("Applying %d comments of %s to %s", len(comment_events), source, self)
+            from sonar import syncer
+
             for key in sorted(comment_events.keys()):
-                self.add_comment(comment_events[key]["value"])
+                self.add_comment(syncer.attributed_comment(comment_events[key]))
                 counter += 1
         return counter
 

@@ -848,8 +848,10 @@ class Issue(findings.Finding):
             log.info("Source %s has no comments added after target %s last change (%s), no comment added", source_issue, self, last_target_change)
         else:
             log.info("Applying %d comments of %s to %s, from %s", len(events), source_issue, self, last_target_change)
+            from sonar import syncer
+
             for key in sorted(events.keys()):
-                self.add_comment(events[key]["value"])
+                self.add_comment(syncer.attributed_comment(events[key]))
                 counter += 1
         return counter
 
