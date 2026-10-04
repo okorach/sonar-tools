@@ -549,8 +549,8 @@ def test_apply_event_false_positive() -> None:
 
 def test_apply_event_assign_does_not_resolve_target_user() -> None:
     """ASSIGN changelog events must not try to resolve the source assignee into a target
-    user (source and target platforms may have completely different user bases): no call
-    to assign(), just an attributed comment naming the source assignee."""
+    user (source and target platforms may have completely different user bases), and must
+    not be migrated as a comment either: only actual human comments are migrated as such."""
     from sonar import syncer
     from sonar.changelog import Changelog
 
@@ -568,7 +568,7 @@ def test_apply_event_assign_does_not_resolve_target_user() -> None:
 
     assert result is True
     mock_assign.assert_not_called()
-    mock_comment.assert_called_once_with("srcuser on 2026-01-01 00:00:00: Assigned to Some Source User")
+    mock_comment.assert_not_called()
 
 
 def test_apply_changelog() -> None:

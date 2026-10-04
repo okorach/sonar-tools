@@ -746,8 +746,6 @@ class Issue(findings.Finding):
             return False
 
     def __apply_event(self, event: changelog.Changelog, settings: ConfigSettings) -> bool:
-        from sonar import syncer
-
         # origin = f"originally by *{event['userName']}* on original branch"
         (event_type, data) = event.changelog_type()
         log.debug("Applying event type %s - %s", event_type, str(event))
@@ -797,10 +795,10 @@ class Issue(findings.Finding):
             self.unconfirm()
             # self.add_comment(f"Won't fix {origin}", settings[SYNC_ADD_COMMENTS])
         elif event_type == "ASSIGN":
-            # Not resolved into an actual target assignee: source and target platforms may have
-            # completely different user bases, so the assignee name is only reported as a comment.
-            if settings[syncer.SYNC_ASSIGN]:
-                self.add_comment(syncer.attributed_comment({"user": event.author(), "date": event.date_time(), "value": f"Assigned to {data}"}))
+            # Not applied nor commented: source and target platforms may have completely
+            # different user bases, so the source assignee is neither resolved into a target
+            # user nor reported as a comment (only actual human comments are migrated as such).
+            log.debug("Assignment changelog %s is not applied", str(event))
         elif event_type == "UNASSIGN":
             self.unassign()
         elif event_type == "TAG":

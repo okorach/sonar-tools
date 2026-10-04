@@ -484,8 +484,6 @@ class DependencyRisk(SqObject):
 
     def __apply_event(self, event: DependencyRiskChangelog, settings: ConfigSettings) -> bool:
         """Applies a single changelog event to this dependency risk."""
-        from sonar import syncer, users
-
         (event_type, data) = event.changelog_type()
         log.debug("Applying SCA event type %s - %s to %s", event_type, data, str(self))
 
@@ -493,8 +491,8 @@ class DependencyRisk(SqObject):
             return self._apply_status_change(data, source_url=self._sync_source_url)
         if event_type == "SEVERITY" and data:
             return self._apply_severity_change(data)
-        if event_type == "ASSIGN" and data:
-            return self.assign(data, settings, syncer, users)
+        # ASSIGN is intentionally not applied: source and target platforms may have completely
+        # different user bases, so the source assignee is not resolved into a target user.
 
         log.debug("SCA event %s not applied to %s", str(event), str(self))
         return False
