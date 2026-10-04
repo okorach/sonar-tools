@@ -88,7 +88,7 @@ _IMPORTABLE_PROPERTIES = (
     phelp.AI_CODE_FIX,
 )
 
-_PREDEFINED_LINKS = ("homepage", "scm", "issue")
+_PREDEFINED_LINKS = ("homepage", "scm", "issue", "ci")
 
 
 class Project(Component):
