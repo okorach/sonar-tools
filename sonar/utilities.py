@@ -398,9 +398,11 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     kwargs["skip_cert_verify"] = kwargs.pop(opt.SKIP_CERT_VERIFY, False)
 
     if second_platform:
-        kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
-        kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, kwargs[opt.TOKEN])
-        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
+        # dict.pop()'s default only kicks in when the key is absent, but argparse always sets these
+        # keys (to None when the CLI option is omitted), so "or" is needed to actually fall back.
+        kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, None) or kwargs[opt.URL]
+        kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, None) or kwargs[opt.TOKEN]
+        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, None) or kwargs["org"]
     default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
     kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs
