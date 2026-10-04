@@ -242,8 +242,8 @@ class Issue(findings.Finding):
             issue_list = cls.search_unsafe(endpoint, raise_error=True, **new_params)
         except TooManyIssuesError as e:
             log.info("%s - Recursing and slicing the search by date", e.message)
-            date_start = get_oldest_issue(endpoint, params=new_params)
-            date_stop = get_newest_issue(endpoint, params=new_params)
+            date_start = get_oldest_issue(endpoint, **new_params)
+            date_stop = get_newest_issue(endpoint, **new_params)
             try:
                 issue_list = cls.search_by_date(endpoint, date_start=date_start, date_stop=date_stop, raise_error=raise_error, **new_params)
             except (TooManyIssuesError, TooManyFacetsError) as inner_error:
