@@ -1070,7 +1070,7 @@ def test_apply_changelog_applies_events_and_comments() -> None:
 
     assert count == 2
     mock_event.assert_called_once()
-    mock_comment.assert_called_once_with("hi")
+    mock_comment.assert_called_once_with("alice on 2026-04-02 00:00:00: hi")
 
 
 def test_apply_changelog_skips_events_already_applied() -> None:

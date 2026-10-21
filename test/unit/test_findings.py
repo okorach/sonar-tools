@@ -88,8 +88,9 @@ __WRONG_OPTS = [
     [f"--{opt.PORTFOLIOS}", f"-{opt.KEY_REGEXP_SHORT}", tutil.LIVE_PROJECT],
 ]
 
-_FLAT_12K_PROJECT = "12k-issues-flat"
-_STRUCTURED_12K_PROJECT = "12k-issues-structured"
+_FLAT_12K_PROJECT = "12k-issues-flat-100-files"
+_FLAT_12K_PROJECT_FACET_ERROR = "12k-issues-flat-120-files"
+_STRUCTURED_12K_PROJECT = "12k-issues-2-dirs"
 _NBR_ISSUES_12K = 12000
 _NBR_ISSUES_12K_BEST_EFFORT = 10000
 
@@ -118,7 +119,7 @@ def test_tune_params() -> None:
 
 def test_export_max_facets(csv_file: Generator[str]) -> None:
     """test_export_max_facets"""
-    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.NBR_THREADS} 16 --{opt.KEY_REGEXP} {_FLAT_12K_PROJECT}"
+    cmd = f"{CMD} --{opt.REPORT_FILE} {csv_file} --{opt.NBR_THREADS} 16 --{opt.KEY_REGEXP} {_FLAT_12K_PROJECT_FACET_ERROR}"
     assert tutil.run_cmd(findings_export.main, cmd) == e.OK
     expected_nbr_lines = _NBR_ISSUES_12K if tutil.SQ.edition() in (c.EE, c.DCE) else _NBR_ISSUES_12K_BEST_EFFORT
     assert tutil.csv_nbr_lines(csv_file) == expected_nbr_lines

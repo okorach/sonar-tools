@@ -21,6 +21,8 @@
 """Test of the issues module and class, as well as changelog"""
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 import pytest
 
 from requests.exceptions import ConnectionError
@@ -34,8 +36,9 @@ import sonar.util.issue_defs as idefs
 import credentials as tconf
 import sonar.util.misc as util
 
-_FLAT_12K_PROJECT = "12k-issues-flat"
-_STRUCTURED_12K_PROJECT = "12k-issues-structured"
+_FLAT_12K_PROJECT = "12k-issues-flat-100-files"
+_FLAT_12K_PROJECT_FACET_ERROR = "12k-issues-flat-120-files"
+_STRUCTURED_12K_PROJECT = "12k-issues-2-dirs"
 _NBR_ISSUES_12K = 12000
 _NBR_ISSUES_12K_BEST_EFFORT = 10000
 
@@ -394,19 +397,21 @@ def test_too_many_facets() -> None:
     if tutil.SQ.is_sonarcloud():
         pytest.skip("SonarCloud recursively splits searches instead of raising TooManyFacetsError")
     with pytest.raises(issues.TooManyFacetsError):
-        Issue.search_by_date(tutil.SQ, raise_error=True, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project=_FLAT_12K_PROJECT)
+        Issue.search_by_date(
+            tutil.SQ, raise_error=True, date_start=datetime(2000, 1, 1), date_stop=datetime(2030, 1, 1), project=_FLAT_12K_PROJECT_FACET_ERROR
+        )
 
 
 def test_too_many_facets_by_project() -> None:
     """test_too_many_facets_by_project"""
     if tutil.SQ.edition() in (c.EE, c.DCE):
-        issues_d = Issue.search_by_project(tutil.SQ, project=_FLAT_12K_PROJECT)
+        issues_d = Issue.search_by_project(tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR)
         assert len(issues_d) == _NBR_ISSUES_12K
     else:
-        issues_d = Issue.search_by_project(tutil.SQ, raise_error=False, project=_FLAT_12K_PROJECT)
+        issues_d = Issue.search_by_project(tutil.SQ, raise_error=False, project=_FLAT_12K_PROJECT_FACET_ERROR)
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_project(tutil.SQ, raise_error=True, project=_FLAT_12K_PROJECT)
+            Issue.search_by_project(tutil.SQ, raise_error=True, project=_FLAT_12K_PROJECT_FACET_ERROR)
 
 
 def test_search_by_project_object() -> None:
@@ -427,12 +432,12 @@ def test_search_by_status() -> None:
 def test_search_by_status_facet_error() -> None:
     """test_search_by_status_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):
-        issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT, raise_error=False)
+        issues_d = Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT_FACET_ERROR, raise_error=False)
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT)
+            Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT_FACET_ERROR)
     else:
-        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT)) == _NBR_ISSUES_12K
+        assert len(Issue.search_by_status(tutil.SQ, status="OPEN", project=_FLAT_12K_PROJECT_FACET_ERROR)) == _NBR_ISSUES_12K
 
 
 def test_search_by_directory() -> None:
@@ -451,12 +456,16 @@ def test_search_by_directory_facet_error() -> None:
     """test_search_by_directory_facet_error"""
     if tutil.SQ.is_sonarcloud() or tutil.SQ.edition() in (c.CE, c.DE):
         with pytest.raises(issues.TooManyFacetsError):
-            Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, raise_error=True, directory="/", status="OPEN")
-        issues_d = Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, raise_error=False, directory="/", status="OPEN")
+            Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR, raise_error=True, directory="/", status="OPEN")
+        issues_d = Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR, raise_error=False, directory="/", status="OPEN")
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
     else:
         assert (
-            len(Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT, directory="/", statuses="OPEN", issueStatuses="OPEN"))
+            len(
+                Issue.search_by_directory(
+                    tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR, directory="/", statuses="OPEN", issueStatuses="OPEN"
+                )
+            )
             == _NBR_ISSUES_12K
         )
 
@@ -536,6 +545,30 @@ def test_apply_event_false_positive() -> None:
     assert issue.is_false_positive()
     # Restore
     issue.reopen()
+
+
+def test_apply_event_assign_does_not_resolve_target_user() -> None:
+    """ASSIGN changelog events must not try to resolve the source assignee into a target
+    user (source and target platforms may have completely different user bases), and must
+    not be migrated as a comment either: only actual human comments are migrated as such."""
+    from sonar import syncer
+    from sonar.changelog import Changelog
+
+    issues_d = Issue.search_by_project(endpoint=tutil.SQ, project=tutil.PROJECT_1, statuses="OPEN,CONFIRMED")
+    issue = list(issues_d.values())[0]
+
+    assign_event = Changelog(
+        {"creationDate": "2026-01-01T00:00:00+0000", "user": "srcuser", "diffs": [{"key": "assignee", "newValue": "Some Source User"}]},
+        concerned_object=issue,
+    )
+
+    settings = {syncer.SYNC_ASSIGN: True}
+    with patch.object(issue, "assign") as mock_assign, patch.object(issue, "add_comment", return_value=True) as mock_comment:
+        result = issue._Issue__apply_event(assign_event, settings)
+
+    assert result is True
+    mock_assign.assert_not_called()
+    mock_comment.assert_not_called()
 
 
 def test_apply_changelog() -> None:

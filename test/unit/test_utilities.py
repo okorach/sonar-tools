@@ -21,7 +21,11 @@
 
 """utilities tests"""
 
+from datetime import datetime
+from types import SimpleNamespace
+
 import pytest
+import cli.options as opt
 import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar import exceptions
@@ -288,3 +292,48 @@ def test_parse_timestamp() -> None:
     assert d.utcoffset().total_seconds() == 2 * 3600
     assert d == datetime(2026, 10, 21, 8, 0, 0, tzinfo=timezone.utc)
     assert sutil.parse_timestamp("2026-10-21T10:00:00Z") == datetime(2026, 10, 21, 10, 0, 0, tzinfo=timezone.utc)
+
+
+def _args_for_convert(**overrides: object) -> SimpleNamespace:
+    """Builds a minimal args-like object accepted by sutil.convert_args()"""
+    base = {
+        opt.URL: "https://sonarcloud.io",
+        opt.TOKEN: "srctoken",
+        opt.ORG: "srcorg",
+        opt.CERT: None,
+        opt.SKIP_CERT_VERIFY: False,
+        opt.HTTP_TIMEOUT: None,
+        opt.URL_TARGET: None,
+        opt.TOKEN_TARGET: "tgttoken",
+        opt.ORG_TARGET: None,
+    }
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+def test_convert_args_source_platform() -> None:
+    """convert_args() without second_platform just renames fields for the source platform"""
+    kwargs = sutil.convert_args(_args_for_convert())
+    assert kwargs["org"] == "srcorg"
+    assert kwargs[opt.URL] == "https://sonarcloud.io"
+    assert kwargs[opt.TOKEN] == "srctoken"
+
+
+def test_convert_args_second_platform_inherits_source_org() -> None:
+    """convert_args(second_platform=True) falls back to the source org when no target org is given,
+    even if called directly on an args object that never went through options.parse_and_check()"""
+    kwargs = sutil.convert_args(_args_for_convert(), second_platform=True)
+    assert kwargs["org"] == "srcorg"
+
+
+def test_convert_args_second_platform_keeps_explicit_target_org() -> None:
+    """convert_args(second_platform=True) uses the target org when one is explicitly provided"""
+    kwargs = sutil.convert_args(_args_for_convert(**{opt.ORG_TARGET: "tgtorg"}), second_platform=True)
+    assert kwargs["org"] == "tgtorg"
+
+
+def test_convert_args_second_platform_url_and_token() -> None:
+    """convert_args(second_platform=True) swaps in the target URL and token"""
+    kwargs = sutil.convert_args(_args_for_convert(**{opt.URL_TARGET: "https://sonarqube.example.com"}), second_platform=True)
+    assert kwargs[opt.URL] == "https://sonarqube.example.com"
+    assert kwargs[opt.TOKEN] == "tgttoken"
