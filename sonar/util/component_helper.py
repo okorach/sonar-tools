@@ -19,6 +19,7 @@
 #
 
 import re
+from datetime import datetime
 from typing import Any, Optional
 
 import sonar.logging as log
@@ -28,6 +29,11 @@ from sonar.components import Component
 from sonar.platform import Platform
 from sonar.portfolios import Portfolio
 from sonar.projects import Project
+
+
+def __last_analysis(comp: Component) -> Optional[datetime]:
+    """Returns the last analysis date of a component (for projects: most recent of all branches and PRs)"""
+    return comp.last_analysis_any() if isinstance(comp, Project) else comp.last_analysis()
 
 
 def get_components(
@@ -69,6 +75,6 @@ def get_components(
     if kwargs.get(options.ANALYZED_AFTER):
         log.info("Filtering components analyzed after %s from a list of %d components", kwargs.get(options.ANALYZED_AFTER), len(components))
         analyzed_after = kwargs.get(options.ANALYZED_AFTER)
-        components = [comp for comp in components if comp.last_analysis() and comp.last_analysis() >= analyzed_after]
+        components = [comp for comp in components if (last_ana := __last_analysis(comp)) and last_ana >= analyzed_after]
         log.info("%d components analyzed after %s", len(components), kwargs.get(options.ANALYZED_AFTER))
     return components

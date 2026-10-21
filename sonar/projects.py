@@ -222,6 +222,16 @@ class Project(Component):
         self._branches_last_analysis = most_recent
         return self._branches_last_analysis
 
+    def last_analysis_any(self) -> Optional[datetime]:
+        """:returns: Most recent analysis date of the project, all its branches and pull requests, or None if never analyzed"""
+        dates = [self.last_analysis(include_branches=True)]
+        try:
+            dates += [pr.last_analysis() for pr in self.pull_requests().values()]
+        except exceptions.UnsupportedOperation:
+            pass
+        dates = [d for d in dates if d]
+        return max(dates) if dates else None
+
     def loc(self) -> int:
         """:return: Number of LoCs of the project, taking into account branches and pull requests, if any
         :rtype: int
@@ -1437,7 +1447,11 @@ def __export_zip_thread(project: Project, export_timeout: int) -> dict[str, str]
 
 
 def export_zips(
-    endpoint: Platform, key_regexp: Optional[str] = None, threads: int = 8, export_timeout: int = 30, skip_zero_loc: bool = False
+    endpoint: Platform,
+    key_regexp: Optional[str] = None,
+    threads: int = 8,
+    export_timeout: int = 30, skip_zero_loc: bool = False,
+    analyzed_after: Optional[datetime] = None,
 ) -> list[dict[str, str]]:
     """Export as zip all or a list of projects
 
@@ -1445,12 +1459,16 @@ def export_zips(
     :param str key_regexp: Regexp to filter projects to export, defaults to None (all projects)
     :param int threads: Number of parallel threads for export, defaults to 8
     :param int export_timeout: Timeout to export the project, defaults to 30
+    :param datetime analyzed_after: Only export projects whose last analysis (any branch or PR) is at or after this date, defaults to None
     :return: list of exported projects with export result
     """
     from sonar.tasks import SUCCESS
 
     statuses, results = {"SUCCESS": 0}, []
     projects_list = {k: p for k, p in Project.search(endpoint, threads=threads).items() if not key_regexp or re.match(rf"^{key_regexp}$", p.key)}
+    if analyzed_after:
+        projects_list = {k: p for k, p in projects_list.items() if (last_ana := p.last_analysis_any()) and last_ana >= analyzed_after}
+        log.info("%d projects analyzed after %s", len(projects_list), analyzed_after)
     nbr_projects = len(projects_list)
     if skip_zero_loc:
         results = [

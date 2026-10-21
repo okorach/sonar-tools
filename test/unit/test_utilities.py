@@ -25,7 +25,7 @@ import pytest
 import sonar.utilities as sutil
 import sonar.util.misc as util
 from sonar import exceptions
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def test_token_type() -> None:
@@ -263,3 +263,28 @@ def test_levenshtein_distance_score_cutoff() -> None:
     assert sutil.levenshtein_distance("kitten", "sitting", score_cutoff=2) == 3
     assert sutil.levenshtein_distance("abcdef", "xyz", score_cutoff=4) == 5
     assert sutil.levenshtein_distance("completely", "different", score_cutoff=3) == 4
+
+
+def test_parse_timestamp() -> None:
+    """parse_timestamp accepts dates, naive datetimes and datetimes with timezone"""
+    assert sutil.parse_timestamp(None) is None
+    for bad in ("", "foo", "2026-13-01", "21/10/2026", "2026-10-21 10:00:00"):
+        assert sutil.parse_timestamp(bad) is None
+
+    # Date only: midnight local time
+    d = sutil.parse_timestamp("2026-10-21")
+    assert d.tzinfo is not None
+    assert d.replace(tzinfo=None) == datetime(2026, 10, 21, 0, 0, 0)
+    assert d.utcoffset() == datetime(2026, 10, 21).astimezone().utcoffset()
+
+    # Naive datetime: local time
+    d = sutil.parse_timestamp("2026-10-21T10:30:15")
+    assert d.tzinfo is not None
+    assert d.replace(tzinfo=None) == datetime(2026, 10, 21, 10, 30, 15)
+    assert d.utcoffset() == datetime(2026, 10, 21, 10, 30, 15).astimezone().utcoffset()
+
+    # Explicit timezone is preserved
+    d = sutil.parse_timestamp("2026-10-21T10:00:00+02:00")
+    assert d.utcoffset().total_seconds() == 2 * 3600
+    assert d == datetime(2026, 10, 21, 8, 0, 0, tzinfo=timezone.utc)
+    assert sutil.parse_timestamp("2026-10-21T10:00:00Z") == datetime(2026, 10, 21, 10, 0, 0, tzinfo=timezone.utc)
