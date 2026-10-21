@@ -349,7 +349,7 @@ class Project(Component):
         """
         log.debug("Auditing %s last analysis date", str(self))
         problems = []
-        age = util.age(self.last_analysis(include_branches=True), True)
+        age = util.age(self.last_analysis_any(), True)
         if age is None:
             if audit_settings.get(c.AUDIT_MODE_PARAM, "") == "housekeeper":
                 return problems

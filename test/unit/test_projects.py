@@ -450,3 +450,30 @@ def test_last_analysis_with_branches() -> None:
     # The result with branches should be >= the result without branches
     if last_analysis_without_branches:
         assert last_analysis_with_branches >= last_analysis_without_branches
+
+
+def test_last_analysis_any_takes_pull_requests_into_account() -> None:
+    """A recent PR analysis makes the project recent even if main branch and branches are old (#2470)"""
+    from datetime import datetime, timezone
+    from unittest.mock import MagicMock
+
+    old = datetime(2020, 1, 1, tzinfo=timezone.utc)
+    recent = datetime(2026, 10, 20, tzinfo=timezone.utc)
+    pr = MagicMock()
+    pr.last_analysis.return_value = recent
+    proj = MagicMock()
+    proj.last_analysis.return_value = old
+    proj.pull_requests.return_value = {"1": pr}
+    assert Project.last_analysis_any(proj) == recent
+
+    # No PR: falls back to project/branches date
+    proj.pull_requests.return_value = {}
+    assert Project.last_analysis_any(proj) == old
+
+    # PRs not supported (Community Edition)
+    proj.pull_requests.side_effect = exceptions.UnsupportedOperation("no PR")
+    assert Project.last_analysis_any(proj) == old
+
+    # Never analyzed
+    proj.last_analysis.return_value = None
+    assert Project.last_analysis_any(proj) is None
