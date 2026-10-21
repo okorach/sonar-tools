@@ -127,6 +127,22 @@ def string_to_datetime(string: Optional[str]) -> Union[datetime.datetime, None]:
             return None
 
 
+def parse_timestamp(string: Optional[str]) -> Union[datetime.datetime, None]:
+    """Parses a YYYY-MM-DD, YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ss+HH:MM string.
+    Dates and datetimes without timezone are assumed to be in the local timezone
+    :return: timezone aware datetime or None if the string is not in a supported format
+    """
+    if string is None:
+        return None
+    for fmt in (SQ_DATETIME_FORMAT, "%Y-%m-%dT%H:%M:%S", SQ_DATE_FORMAT):
+        try:
+            parsed = datetime.datetime.strptime(string, fmt)
+        except ValueError:
+            continue
+        return parsed if parsed.tzinfo else parsed.astimezone()
+    return None
+
+
 def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> Union[str, datetime.datetime]:
     """Converts a date to a string"""
     if not date:

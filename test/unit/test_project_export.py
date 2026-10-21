@@ -83,3 +83,13 @@ def test_no_import_file() -> None:
     """test_no_import_file"""
     cmd = f"{OPTS} --{opt.REPORT_FILE} non-existing.json"
     assert tutil.run_cmd(projects_cli.main, cmd) == e.ARGS_ERROR
+
+
+def test_export_analyzed_after(json_file: Generator[str]) -> None:
+    """test_export_analyzed_after: no project analyzed in the future, wrong format rejected"""
+    base = f"{OPTS} --{opt.EXPORT} --{opt.REPORT_FILE} {json_file} -{opt.KEY_REGEXP_SHORT} {tutil.LIVE_PROJECT}"
+    if tutil.SQ.is_sonarcloud():
+        assert tutil.run_cmd(projects_cli.main, f"{base} --{opt.ANALYZED_AFTER} 2999-01-01") == e.UNSUPPORTED_OPERATION
+        return
+    assert tutil.run_cmd(projects_cli.main, f"{base} --{opt.ANALYZED_AFTER} 2999-01-01") == e.NO_SUCH_KEY
+    assert tutil.run_cmd(projects_cli.main, f"{base} --{opt.ANALYZED_AFTER} not-a-date") == e.ARGS_ERROR
