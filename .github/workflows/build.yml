@@ -44,7 +44,6 @@ jobs:
                       test/unit/test_logging.py test/unit/test_sif.py test/unit/test_update_center.py \
             --junit-xml=build/xunit-results.xml
           poetry run coverage xml -o build/coverage.xml
-        continue-on-error: true
       - name: Run linters
         working-directory: .
         run: |
