@@ -53,7 +53,7 @@ if [[ "${offline}" = "1" ]]; then
     cp "${ROOT_DIR}/conf/offline/setup.py" "${ROOT_DIR}/"
     cp "${ROOT_DIR}/conf/offline/sonar-tools" "${ROOT_DIR}/"
     mv "${ROOT_DIR}/pyproject.toml" "${ROOT_DIR}/pyproject.toml.bak"
-    python setup.py bdist_wheel
+    python3 setup.py bdist_wheel
     mv "${ROOT_DIR}/pyproject.toml.bak" "${ROOT_DIR}/pyproject.toml"
     rm -r "${ROOT_DIR}/setup.py" "${ROOT_DIR}/sonar-tools" "${ROOT_DIR}/sonar_tools.egg-info"
     # python -m build
@@ -67,7 +67,7 @@ if [[ "${deps}" = "1" ]]; then
 else
     pipopts="--no-deps"
 fi
-pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+python3 -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
 
 if [[ "${build_docs}" = "1" ]]; then
     echo "======= BUILDING DOCS ========="
