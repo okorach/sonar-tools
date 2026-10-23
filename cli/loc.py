@@ -260,6 +260,7 @@ def __parse_args(desc: str) -> object:
     options.add_optional_arg(parser, *args, action="store_true", help="Include pull requests in LoC export")
 
     options.add_url_arg(parser)
+    options.add_analyzed_after_arg(parser)
     options.add_branch_arg(parser)
     options.add_component_type_arg(parser)
 
@@ -316,6 +317,7 @@ def main() -> None:
             branch_regexp=kwargs[options.BRANCH_REGEXP],
             topLevelOnly=kwargs["topLevelOnly"],
             pr_regexp=".+" if kwargs.get(options.PULL_REQUESTS, False) else None,
+            analyzedAfter=kwargs.get(options.ANALYZED_AFTER),
         )
         if len(objects_list) == 0:
             raise exceptions.SonarException(f"No object matching regexp '{kwargs[options.KEY_REGEXP]}'", errcodes.WRONG_SEARCH_CRITERIA)

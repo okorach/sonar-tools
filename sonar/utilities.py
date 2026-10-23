@@ -127,6 +127,22 @@ def string_to_datetime(string: Optional[str]) -> Union[datetime.datetime, None]:
             return None
 
 
+def parse_timestamp(string: Optional[str]) -> Union[datetime.datetime, None]:
+    """Parses a YYYY-MM-DD, YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ss+HH:MM string.
+    Dates and datetimes without timezone are assumed to be in the local timezone
+    :return: timezone aware datetime or None if the string is not in a supported format
+    """
+    if string is None:
+        return None
+    for fmt in (SQ_DATETIME_FORMAT, "%Y-%m-%dT%H:%M:%S", SQ_DATE_FORMAT):
+        try:
+            parsed = datetime.datetime.strptime(string, fmt)
+        except ValueError:
+            continue
+        return parsed if parsed.tzinfo else parsed.astimezone()
+    return None
+
+
 def date_to_string(date: Optional[datetime.datetime], with_time: bool = True) -> Union[str, datetime.datetime]:
     """Converts a date to a string"""
     if not date:
@@ -398,9 +414,11 @@ def convert_args(args: object, second_platform: bool = False) -> dict[str, str]:
     kwargs["skip_cert_verify"] = kwargs.pop(opt.SKIP_CERT_VERIFY, False)
 
     if second_platform:
-        kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, kwargs[opt.URL])
-        kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, kwargs[opt.TOKEN])
-        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, kwargs.get(opt.ORG, None))
+        # dict.pop()'s default only kicks in when the key is absent, but argparse always sets these
+        # keys (to None when the CLI option is omitted), so "or" is needed to actually fall back.
+        kwargs[opt.URL] = kwargs.pop(opt.URL_TARGET, None) or kwargs[opt.URL]
+        kwargs[opt.TOKEN] = kwargs.pop(opt.TOKEN_TARGET, None) or kwargs[opt.TOKEN]
+        kwargs["org"] = kwargs.pop(opt.ORG_TARGET, None) or kwargs["org"]
     default_timeout = 20 if is_sonarcloud_url(kwargs[opt.URL]) else 10
     kwargs["http_timeout"] = kwargs.pop(opt.HTTP_TIMEOUT, default_timeout)
     return kwargs

@@ -443,3 +443,32 @@ def test_sort_objects_filters_none() -> None:
     result = _sort_objects(objs, "key+")
     assert None not in result
     assert len(result) == 2
+
+
+def test_loc_analyzed_after(csv_file: Generator[str]) -> None:
+    """test_loc_analyzed_after: all projects analyzed since 1970, none analyzed in the future"""
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file}") == e.OK
+    nbr_lines = tutil.csv_nbr_lines(csv_file)
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} 1970-01-01") == e.OK
+    assert 0 < tutil.csv_nbr_lines(csv_file) <= nbr_lines
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} 2999-01-01") == e.WRONG_SEARCH_CRITERIA
+
+
+def test_loc_analyzed_after_formats(csv_file: Generator[str]) -> None:
+    """test_loc_analyzed_after_formats: datetime with and without timezone are accepted"""
+    for ts in ("1970-01-01T00:00:00", "1970-01-01T00:00:00+02:00", "2999-01-01T10:00:00Z"):
+        expected = e.WRONG_SEARCH_CRITERIA if ts.startswith("2999") else e.OK
+        assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} {ts}") == expected
+
+
+def test_loc_analyzed_after_wrong_format(csv_file: Generator[str]) -> None:
+    """test_loc_analyzed_after_wrong_format"""
+    assert tutil.run_cmd(loc.main, f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.ANALYZED_AFTER} 21/10/2026") == e.ARGS_ERROR
+
+
+def test_loc_analyzed_after_last_analysis(csv_file: Generator[str]) -> None:
+    """test_loc_analyzed_after_last_analysis: selected projects have a last analysis at or after the cutoff"""
+    cutoff = "2000-01-01"
+    cmd = f"{CMD} -{opt.REPORT_FILE_SHORT} {csv_file} --{opt.WITH_LAST_ANALYSIS} --{opt.ANALYZED_AFTER} {cutoff}"
+    assert tutil.run_cmd(loc.main, cmd) == e.OK
+    assert tutil.csv_nbr_lines(csv_file) > 0

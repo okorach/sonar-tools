@@ -39,11 +39,13 @@ def main() -> None:
 
     for result in json.loads(text).get("Results", []):
         for issue in result.get("Vulnerabilities", []):
+            # Title is optional in trivy output, fall back on the vulnerability ID
+            title = issue.get("Title", issue["VulnerabilityID"])
             sonar_issue = {
                 "ruleId": f"{TOOLNAME}:{issue['VulnerabilityID']}",
                 "effortMinutes": 30,
                 "primaryLocation": {
-                    "message": f"{issue['VulnerabilityID']} - {issue['Title']}",
+                    "message": f"{issue['VulnerabilityID']} - {title}",
                     "filePath": "conf/snapshot.Dockerfile",
                     "textRange": {
                         "startLine": 1,
@@ -66,7 +68,7 @@ def main() -> None:
                 sev_mqr = "MEDIUM"
             rules_dict[f"{TOOLNAME}:{issue['VulnerabilityID']}"] = {
                 "id": f"{TOOLNAME}:{issue['VulnerabilityID']}",
-                "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {issue['Title']}",
+                "name": f"{TOOLNAME}:{issue['VulnerabilityID']} - {title}",
                 "description": issue.get("Description", ""),
                 "engineId": TOOLNAME,
                 "type": "VULNERABILITY",
