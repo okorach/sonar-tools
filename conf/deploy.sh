@@ -42,4 +42,4 @@ if [[ "${deps}" = "1" ]]; then
 else
     pipopts="--no-deps"
 fi
-pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+python3 -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
