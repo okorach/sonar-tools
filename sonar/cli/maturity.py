@@ -160,7 +160,7 @@ def compute_summary_age(data: dict[str, Any], settings: dict[str, Any]) -> dict[
     segments = [int(s.strip()) for s in settings.get("projectLastAnalysisDaysThresholds", "1, 3, 7, 15, 30, 90, 180, 365").split(",")] + [10000]
     low_bound = -1
     for high_bound in segments:
-        key = f"between_{low_bound+1}_and_{high_bound}_days"
+        key = f"between_{low_bound + 1}_and_{high_bound}_days"
         count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[AGE_KEY] <= high_bound)
         summary_data["any_branch"][key] = __count_percentage(count, nbr_projects)
         count = sum(1 for d in data.values() if d["lines"] is not None and low_bound < d[f"main_branch_{AGE_KEY}"] <= high_bound)
@@ -325,7 +325,7 @@ def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) 
     for i in range(len(segments)):
         high_bound = segments[i]
         if i + 1 < len(segments):
-            key = f"between_{low_bound+1}_and_{high_bound}_days"
+            key = f"between_{low_bound + 1}_and_{high_bound}_days"
             count = sum(1 for d in data_nc.values() if low_bound < d[NEW_CODE_DAYS_KEY] <= high_bound)
         else:
             key = f"more_than_{low_bound}_days"
@@ -337,10 +337,10 @@ def compute_new_code_statistics(data: dict[str, Any], settings: dict[str, Any]) 
     for i in range(len(segments)):
         high_bound = segments[i]
         if i + 1 < len(segments):
-            key = f"between_{int(low_bound*100)}_and_{int(high_bound*100)}_percent"
+            key = f"between_{int(low_bound * 100)}_and_{int(high_bound * 100)}_percent"
             count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES_KEY] / d["lines"] <= high_bound)
         else:
-            key = f"more_than_{int(low_bound*100)}_percent"
+            key = f"more_than_{int(low_bound * 100)}_percent"
             count = sum(1 for d in data_nc.values() if d["lines"] != 0 and low_bound < d[NEW_CODE_LINES_KEY] / d["lines"])
         summary_data[NEW_CODE_RATIO_KEY][key] = __count_percentage(count, nbr_projects)
         low_bound = high_bound
@@ -358,7 +358,7 @@ def compute_analysis_frequency_statistics(data: dict[str, Any], settings: dict[s
     for i in range(len(thresholds)):
         if i + 1 < len(thresholds):
             i_min, i_max = thresholds[i], thresholds[i + 1]
-            key = f"between_{thresholds[i]}_and_{thresholds[i+1]}_times_over_the_last_{recent_days}_days"
+            key = f"between_{thresholds[i]}_and_{thresholds[i + 1]}_times_over_the_last_{recent_days}_days"
         else:
             i_min, i_max = thresholds[i], 10000
             key = f"more_than_{thresholds[i]}_times_over_the_last_{recent_days}_days"
