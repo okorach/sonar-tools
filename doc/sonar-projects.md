@@ -11,10 +11,11 @@ Exports (or imports) projects of a given Server instance to / from zip files (Th
 `sonar-projects` replaces the deprecated `sonar-projects-export` and `sonar-projects-import` commands
 
 Basic Usage:
-`sonar-projects -e [--exportTimeout <timeout>] [--skipZeroLoC] -f exported_projects.json`
+`sonar-projects -e [--exportTimeout <timeout>] [--skipZeroLoC] [--analyzedAfter <date>] -f exported_projects.json`
 - `--exportTimeout`: Defines timeout to export a single project in seconds,
                      by default 180 s (large projects can take time to export)
 - `--skipZeroLoc`    Skips export of projects with zero lines of code
+- `--analyzedAfter <date>`: Only select projects whose last analysis (most recent of all branches and pull requests) is equal or after the given date. Accepted formats: `YYYY-MM-DD` (00:00:00 local time of the machine running the tool), `YYYY-MM-DDTHH:mm:ss` (local time of the machine running the tool) or `YYYY-MM-DDTHH:mm:ss+HH:MM` (with timezone), e.g. `--analyzedAfter 2026-10-21T10:00:00+02:00`. Useful for incremental extractions
 - `-f`: Defines the file for JSON output (default stdout)
 
 `sonar-projects -i [--importTimeout <timeout>] -f exported_projects.json`

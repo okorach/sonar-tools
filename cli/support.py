@@ -84,7 +84,7 @@ def __get_args(desc):
 def __get_issue_id(**kwargs):
     """Converts a ticket number into issue id needed to post on the issue"""
     tix = kwargs["ticket"]
-    url = f'{kwargs["url"]}/rest/servicedeskapi/request/{tix}'
+    url = f"{kwargs['url']}/rest/servicedeskapi/request/{tix}"
     r = requests.get(url, auth=kwargs["creds"], timeout=10)
     if not r.ok:
         if r.status_code == HTTPStatus.NOT_FOUND:
@@ -95,7 +95,7 @@ def __get_issue_id(**kwargs):
 
 
 def __add_comment(comment, **kwargs) -> None:
-    url = f'{kwargs["url"]}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment'
+    url = f"{kwargs['url']}/rest/api/2/issue/{__get_issue_id(**kwargs)}/comment"
     requests.post(url, auth=kwargs["creds"], json={"body": comment, "properties": PRIVATE_COMMENT}, timeout=10)
 
 
@@ -147,7 +147,7 @@ def main() -> None:
     kwargs = vars(__get_args("Audits a Sonar ServiceDesk ticket (Searches for SIF attachment and audits SIF)"))
     kwargs["creds"] = (kwargs.pop("login"), kwargs.pop("password"))
     if not kwargs["ticket"].startswith("SUPPORT-"):
-        kwargs["ticket"] = f'SUPPORT-{kwargs["ticket"]}'
+        kwargs["ticket"] = f"SUPPORT-{kwargs['ticket']}"
     sif_list = __get_sysinfo_from_ticket(**kwargs)
     if len(sif_list) == 0:
         chelp.clear_cache_and_exit(2, f"No SIF found in ticket {kwargs['ticket']}")

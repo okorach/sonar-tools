@@ -3,7 +3,7 @@
 Exports all projects lines of code as they would be counted by the commercial licences.
 See `sonar-loc -h` for details
 
-Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchRegexp>] [-p] [--withTags] [--withURL] [--apps] [--portfolios] [--topLevelOnly] [--sortby <order>]`
+Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchRegexp>] [-p] [--withTags] [--withURL] [--apps] [--portfolios] [--topLevelOnly] [--sortby <order>] [--analyzedAfter <date>]`
 - `-f`: Define file for output (default stdout). File extension is used to deduct expected format (json if file.json, csv otherwise)
 - `--format`: Choose export format between csv (default) and json
 - `--projects`: Output the LOC of projects (this is the default if nothing specified)
@@ -12,6 +12,7 @@ Basic Usage: `sonar-loc [-f <file>] [--format csv|json] [-a] [-n] [-b <branchReg
 - `--topLevelOnly`: For portfolios, only output LoCs for top level portfolios (Enterprise Edition only)
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+- `--analyzedAfter <date>`: Only select projects whose last analysis (most recent of all branches and pull requests) is equal or after the given date. Accepted formats: `YYYY-MM-DD` (00:00:00 local time of the machine running the tool), `YYYY-MM-DDTHH:mm:ss` (local time of the machine running the tool) or `YYYY-MM-DDTHH:mm:ss+HH:MM` (with timezone), e.g. `--analyzedAfter 2026-10-21T10:00:00+02:00`. Useful for incremental extractions
 - `--withTags`: Outputs the tags of the project, app or portfolio
 - `--withURL`: Outputs the URL of the project, app or portfolio for each record
 - `-b` | `--branches`: On top of the projects or apps, export LoCs for each branches of targeted objects

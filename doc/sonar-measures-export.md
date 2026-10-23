@@ -4,7 +4,7 @@ Exports one or all projects with all (or some selected) measures in a CSV file.
 The CSV is sent to standard output.
 Plenty of issue filters can be specified from the command line, type `sonar-measures-export -h` for details
 
-Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b] [-r] [-p] [-d] [-d] [-n] [-a] [--withURL]`
+Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b] [-r] [-p] [-d] [-d] [-n] [-a] [--withURL] [--analyzedAfter <date>]`
 - `-m | --metricKeys`: comma separated list of metrics to export
   - `-m _main` is a shortcut to list all main metrics. It's the recommended option
   - `-m _all` is a shortcut to list all metrics, including the most obscure ones
@@ -17,6 +17,7 @@ Basic Usage: `sonar-measures-export -m _main [-f <file>] [--format csv|json] [-b
 - `-d | --datesWithoutTime`: Outputs dates without time
 - `-n | --withName`: Outputs the project or portfolio name in addition to the key
 - `-a | --withLastAnalysis`: Output the last analysis date (all branches and PR taken into account) in addition to the LOCs
+- `--analyzedAfter <date>`: Only select projects whose last analysis (most recent of all branches and pull requests) is equal or after the given date. Accepted formats: `YYYY-MM-DD` (00:00:00 local time of the machine running the tool), `YYYY-MM-DDTHH:mm:ss` (local time of the machine running the tool) or `YYYY-MM-DDTHH:mm:ss+HH:MM` (with timezone), e.g. `--analyzedAfter 2026-10-21T10:00:00+02:00`. Useful for incremental extractions
 - `--withURL`: Outputs the URL of the project or portfolio for each record
 - `--history`: Export measures history instead of only the last value
 - `-h`, `-u`, `-t`, `-o`, `-v`, `-l`, `--httpTimeout`, `--threads`, `--clientCert`, `--skipCertVerify`: See **sonar-tools** [common parameters](https://github.com/okorach/sonar-tools/blob/master/README.md)

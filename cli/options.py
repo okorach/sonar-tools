@@ -235,10 +235,10 @@ def parse_and_check(parser: ArgumentParser, logger_name: Optional[str] = None, v
     if verify_token:
         sutil.check_token(args.token, sutil.is_sonarcloud_url(kwargs[URL]))
     if ANALYZED_AFTER in kwargs and kwargs[ANALYZED_AFTER] is not None:
-        kwargs[ANALYZED_AFTER] = sutil.string_to_datetime(kwargs[ANALYZED_AFTER])
+        kwargs[ANALYZED_AFTER] = sutil.parse_timestamp(kwargs[ANALYZED_AFTER])
         if kwargs[ANALYZED_AFTER] is None:
             raise ArgumentsError(
-                f"CLI argument --{ANALYZED_AFTER} value is not in the expected '{sutil.SQ_DATE_FORMAT}' or '{sutil.SQ_DATETIME_FORMAT}' format"
+                f"CLI argument --{ANALYZED_AFTER} value is not in the expected 'YYYY-MM-DD', 'YYYY-MM-DDTHH:mm:ss' or 'YYYY-MM-DDTHH:mm:ss+HH:MM' format"
             )
     return args
 
@@ -285,7 +285,11 @@ def add_url_arg(parser: ArgumentParser) -> ArgumentParser:
 def add_analyzed_after_arg(parser: ArgumentParser) -> ArgumentParser:
     """Adds the option to filter components analyzed after a given date"""
     return add_optional_arg(
-        parser, f"--{ANALYZED_AFTER}", default=None, help="Will only select components that have been analyzed after the given date (YYYY-MM-DD)"
+        parser,
+        f"--{ANALYZED_AFTER}",
+        default=None,
+        help="Will only select projects whose last analysis (of any branch or pull request) is equal or after the given date or datetime "
+        "(YYYY-MM-DD, YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ss+HH:MM). Without timezone, local time is assumed",
     )
 
 

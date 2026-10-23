@@ -52,6 +52,7 @@ def __export_projects(endpoint: Platform, **kwargs: Any) -> None:
         export_timeout=kwargs.get("exportTimeout", _EXPORT_IMPORT_TIMEOUT),
         threads=kwargs.get(options.NBR_THREADS, _EXPORT_IMPORT_THREADS),
         skip_zero_loc=kwargs.get("skipZeroLoc", False),
+        analyzed_after=kwargs.get(options.ANALYZED_AFTER),
     )
     if len(dump) == 0:
         raise exceptions.ObjectNotFound(kwargs[options.KEY_REGEXP], "No project found matching the given key regexp")
@@ -141,6 +142,7 @@ def main() -> None:
             required=False,
             help="Skips export or import of projects with zero lines of code",
         )
+        parser = options.add_analyzed_after_arg(parser)
         kwargs = sutil.convert_args(options.parse_and_check(parser=parser, logger_name=TOOL_NAME))
         sq = Platform(**kwargs)
         sq.verify_connection()
@@ -153,11 +155,11 @@ def main() -> None:
         else:
             raise options.ArgumentsError(f"One of --{options.EXPORT} or --{options.IMPORT} option must be chosen")
     except (PermissionError, FileNotFoundError) as e:
-        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f'OS error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}')
+        chelp.clear_cache_and_exit(errcodes.OS_ERROR, f"OS error while {'importing' if kwargs[options.IMPORT] else 'exporting'} projects zip: {e}")
     except exceptions.SonarException as e:
         chelp.clear_cache_and_exit(e.errcode, e.message)
     except RequestException as e:
-        chelp.clear_cache_and_exit(errcodes.SONAR_API, f'HTTP error while {"importing" if kwargs[options.IMPORT] else "exporting"} projects zip: {e}')
+        chelp.clear_cache_and_exit(errcodes.SONAR_API, f"HTTP error while {'importing' if kwargs[options.IMPORT] else 'exporting'} projects zip: {e}")
     chelp.clear_cache_and_exit(errcodes.OK, start_time=start_time)
 
 

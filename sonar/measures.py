@@ -60,7 +60,7 @@ class Measure(SqObject):
         """Constructor"""
         super().__init__(endpoint, data)
         self.value: Optional[Any] = None  #: Measure value
-        self.key = f'{data["metric"]} of {data.get(self.__class__.__CONCERNED_OBJECT)}'
+        self.key = f"{data['metric']} of {data.get(self.__class__.__CONCERNED_OBJECT)}"
         self.metric = data["metric"]  #: Measure metric
         self.component_key = data.get(self.__class__.__CONCERNED_OBJECT)
         self.branch = None
@@ -237,7 +237,7 @@ def format(endpoint: Platform, metric_key: str, value: Any, ratings: str = "lett
     if metric.is_a_rating():
         return chr(int(float(value)) + 64) if ratings == "letters" else int(float(value))
     elif metric.is_a_percent():
-        return float(f"{float(value)/100:.3f}") if percents == "float" else f"{float(value):.1f}%"
+        return float(f"{float(value) / 100:.3f}") if percents == "float" else f"{float(value):.1f}%"
     return value
 
 

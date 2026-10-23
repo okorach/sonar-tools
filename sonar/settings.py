@@ -188,7 +188,9 @@ class Setting(SqObject):
         """Creates a setting with a custom value"""
         branch = component.branch if component is not None else None
         log.debug("Creating setting '%s' of component '%s' value '%s'", key, str(component), str(value))
-        api, _, params, _ = endpoint.api.get_details(Setting, Oper.CREATE, key=key, component=component.project.key if component else None, branch=branch)
+        api, _, params, _ = endpoint.api.get_details(
+            Setting, Oper.CREATE, key=key, component=component.project.key if component else None, branch=branch
+        )
         endpoint.post(api, params=params)
         return cls.get_object(endpoint, key, component)
 
@@ -625,7 +627,9 @@ def decode(setting_key: str, setting_value: Any) -> Any:
     return setting_value
 
 
-def _get_setting_via_values_api(endpoint: Platform, key: str, component_key: Optional[str], branch: Optional[str], component: Optional[Component]) -> tuple:
+def _get_setting_via_values_api(
+    endpoint: Platform, key: str, component_key: Optional[str], branch: Optional[str], component: Optional[Component]
+) -> tuple:
     """Fetches a setting via settings/values API, returns (resolved_key, data)"""
     if key == NEW_CODE_PERIOD:
         key = "sonar.leak.period.type"
