@@ -60,7 +60,7 @@ setuptools.setup(
         "python-dateutil",
         "requests",
         "jprops",
-"PyYAML",
+        "PyYAML",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

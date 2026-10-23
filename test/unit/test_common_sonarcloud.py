@@ -33,7 +33,7 @@ import cli.options as opt
 from sonar.cli import config
 
 CMD = "config.py"
-SC_OPTS = f'-{opt.URL_SHORT} https://sonarcloud.io -{opt.TOKEN_SHORT} {os.getenv("SONAR_TOKEN_SONARCLOUD")}'
+SC_OPTS = f"-{opt.URL_SHORT} https://sonarcloud.io -{opt.TOKEN_SHORT} {os.getenv('SONAR_TOKEN_SONARCLOUD')}"
 
 OPTS = f"{CMD} {SC_OPTS} -{opt.EXPORT_SHORT}"
 MY_ORG_2 = "okorach-github"

@@ -325,11 +325,11 @@ class Project(Component):
             return None
         p_bind = self.binding()
         log.debug("%s binding_key = %s", str(self), str(p_bind))
-        key = f'{p_bind["alm"]}{_BIND_SEP}{p_bind["repository"]}'
+        key = f"{p_bind['alm']}{_BIND_SEP}{p_bind['repository']}"
         if p_bind["alm"] == devops.DEVOPS_BITBUCKET:
-            key += f'{_BIND_SEP}{p_bind["slug"]}'
+            key += f"{_BIND_SEP}{p_bind['slug']}"
         elif p_bind["alm"] == devops.DEVOPS_AZURE:
-            key += f'{_BIND_SEP}{p_bind["projectName"]}'
+            key += f"{_BIND_SEP}{p_bind['projectName']}"
         return key
 
     def is_part_of_monorepo(self) -> bool:
@@ -1450,7 +1450,8 @@ def export_zips(
     endpoint: Platform,
     key_regexp: Optional[str] = None,
     threads: int = 8,
-    export_timeout: int = 30, skip_zero_loc: bool = False,
+    export_timeout: int = 30,
+    skip_zero_loc: bool = False,
     analyzed_after: Optional[datetime] = None,
 ) -> list[dict[str, str]]:
     """Export as zip all or a list of projects

@@ -461,11 +461,7 @@ def test_search_by_directory_facet_error() -> None:
         assert len(issues_d) == _NBR_ISSUES_12K_BEST_EFFORT
     else:
         assert (
-            len(
-                Issue.search_by_directory(
-                    tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR, directory="/", statuses="OPEN", issueStatuses="OPEN"
-                )
-            )
+            len(Issue.search_by_directory(tutil.SQ, project=_FLAT_12K_PROJECT_FACET_ERROR, directory="/", statuses="OPEN", issueStatuses="OPEN"))
             == _NBR_ISSUES_12K
         )
 
