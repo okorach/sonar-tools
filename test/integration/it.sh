@@ -105,7 +105,6 @@ do
         pgport=$(expr ${sqport} - 4000)
         echo sqs create -i ${id} -t "$(tag_for "${env}")" -s ${sqport} -p ${pgport} -f "$(backup_for "${env}")"
         sqs create -i ${id} -t "$(tag_for "${env}")" -s ${sqport} -p ${pgport} -f "$(backup_for "${env}")" 1>$IT_LOG_FILE 2>&1
-        sqs restart -i ${id} 1>$IT_LOG_FILE 2>&1
         export SONAR_TOKEN=$SONAR_TOKEN_ADMIN_USER
         if [[ "${env}" =~ ^9.*$ ]]; then
             logmsg "Using 9 token"
