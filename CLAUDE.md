@@ -38,6 +38,8 @@ poetry run pytest test/gen/latest/test_projects.py::test_function_name
 
 Tests require running SonarQube instances with pre-provisioned test data. Test generation uses `test/build` to prepare test files in `test/gen/`. Unit tests are in `test/unit/`.
 
+**Releasing:** PyPI publishing is automated via `.github/workflows/release.yml`, triggered on GitHub Release publication and using PyPI trusted publishing (OIDC, no stored token). Docker Hub publishing remains manual via `conf/release.sh`. See `doc/release-process.md` for the full process.
+
 ## Code Style
 
 - Line length: 150 characters
