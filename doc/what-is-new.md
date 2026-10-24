@@ -1,8 +1,19 @@
-# Next version
+# Version 3.22
 
 * `sonar-loc`, `sonar-measures-export` and `sonar-projects --export`: Add `--analyzedAfter` option to only process projects whose last analysis (all branches and PRs) is equal or after a given date or datetime, for incremental extractions (#2472)
+* `sonar-findings-sync`: Comments copied to the target now mention the original author and date (#2460)
 * `sonar-housekeeper` and `sonar-audit`: Fix projects wrongly considered as stale (and eligible for deletion) when their most recent analysis is on a pull request (#2470)
+* `sonar-config`: Fix export of projects with a `ci` link that then failed import schema validation (#2461)
+* Dropped the GPL-licensed `levenshtein` dependency, replaced by a native implementation (#2448)
+
+# Version 3.21
+
 * `sonar-loc`: Add a `--sortby` option to sort the output by project key, lines of code or last analysis date, ascending or descending (#2424)
+* SonarQube Cloud compatibility fixes:
+   - `sonar-config` now imports permission templates and organization-level new code period (#2421, #2402)
+   - `sonar-measures-export` and `sonar-rules` fixes (#2400, #2404)
+   - Organization is now declared on all organization-scoped endpoints (#2395)
+* Rule descriptions are now correctly extracted on recent SonarQube versions that return them as `descriptionSections` (#2109)
 * Improved Docker documentation: each tool now has its own Docker section with portable, copy-paste-ready examples covering stdout, file output (with volume mounts), and localhost SonarQube Server on Linux, macOS and Windows (#2407)
 * Removed the legacy `sonar-migration` tool and its Docker image. It is superseded by the official [Sonar Migration Tool](https://github.com/sonar-solutions/sonar-migration-tool)
 
