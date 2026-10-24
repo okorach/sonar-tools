@@ -41,6 +41,7 @@ deletes tokens created since more than a certain number of days
 # What's New - Release notes
 - [What's new](https://github.com/okorach/sonar-tools/blob/master/doc/what-is-new.md)
 - [Release notes](https://github.com/okorach/sonar-tools/releases)
+- [Release process](https://github.com/okorach/sonar-tools/blob/master/doc/release-process.md) (for maintainers)
 
 # Requirements and Installation
 - `sonar-tools` requires python 3.9 or higher

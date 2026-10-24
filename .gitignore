@@ -28,3 +28,4 @@ tmp/
 test/gen/
 !sonar/cli/sonar-config.schema.json
 !sonar/cli/sonar-config.schema.yaml
+!.github/workflows/*.yml
