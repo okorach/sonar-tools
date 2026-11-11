@@ -42,19 +42,15 @@ fi
 if [[ "${linters_to_run}" == *"ruff"* ]]; then
     echo "===> Running ruff"
     rm -f "${RUFF_REPORT}"
-    ruff check . | tee "${BUILD_DIR}/ruff-report.txt" | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
-    re=$?
-    if [[ "${re}" = "32" ]]; then
-        >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
-        exit "${re}"
-    fi
-    cat "${BUILD_DIR}/ruff-report.txt"
+    ruff check . --output-format json | "${CONF_DIR}"/ruff2sonar.py "${external_format}" >"${RUFF_REPORT}"
+    [[ ! -s "${RUFF_REPORT}" ]] && rm -f "${RUFF_REPORT}"
+    ruff check . | tee "${BUILD_DIR}/ruff-report.txt"
 fi
 
 if [[ "${linters_to_run}" == *"pylint"* ]]; then
     echo "===> Running pylint"
     rm -f "${PYLINT_REPORT}"
-    pylint --rcfile "${CONF_DIR}"/pylintrc "${ROOT_DIR}"/*.py "${ROOT_DIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${PYLINT_REPORT}"
+    "${PYTHON}" -m pylint --rcfile "${CONF_DIR}"/pylintrc "${ROOT_DIR}"/*.py "${ROOT_DIR}"/*/*.py -r n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee "${PYLINT_REPORT}"
     re=$?
     if [[ "${re}" = "32" ]]; then
         >&2 echo "ERROR: pylint execution failed, errcode ${re}, aborting..."
@@ -66,7 +62,7 @@ if [[ "${linters_to_run}" == *"flake8"* ]]; then
     echo "===> Running flake8"
     rm -f "${FLAKE8_REPORT}"
     # See .flake8 file for settings
-    flake8 --config "${CONF_DIR}/.flake8" --exclude test/gen "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
+    "${PYTHON}" -m flake8 --config "${CONF_DIR}/.flake8" --exclude test/gen,.venv,venv,path "${ROOT_DIR}" | tee "${FLAKE8_REPORT}"
 fi
 
 if [[ "${localbuild}" = "true" ]]; then

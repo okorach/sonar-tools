@@ -28,3 +28,12 @@ FLAKE8_REPORT="${BUILD_DIR}/flake8-report.out"
 SHELLCHECK_REPORT="${BUILD_DIR}/external-issues-shellcheck.json"
 TRIVY_REPORT="${BUILD_DIR}/external-issues-trivy.json"
 RUFF_REPORT="${BUILD_DIR}/external-issues-ruff.json"
+
+# Python used to deploy locally: active virtualenv, else project .venv, else system python3
+if [[ -n "${VIRTUAL_ENV}" ]]; then
+    PYTHON="${VIRTUAL_ENV}/bin/python3"
+elif [[ -x "${ROOT_DIR}/.venv/bin/python3" ]]; then
+    PYTHON="${ROOT_DIR}/.venv/bin/python3"
+else
+    PYTHON="python3"
+fi

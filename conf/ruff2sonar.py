@@ -18,89 +18,55 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
-"""Converts Ruff report format to Sonar external issues format"""
+"""Converts Ruff JSON report format (ruff check --output-format json) to Sonar external issues format"""
 
 import json
-import re
+import os
 import sys
-from typing import Optional
 
 TOOLNAME = "ruff"
 
-TRIVY_TO_MQR_MAPPING = {"CRITICAL": "BLOCKER"}
-MAPPING = {"LOW": "MINOR", "MEDIUM": "MAJOR", "HIGH": "CRITICAL", "BLOCKER": "BLOCKER"}
 
-
-def _apply_range_marker(issue_range: dict, rule_id: str, end_line: Optional[int], start_col: Optional[int], end_col: Optional[int]) -> None:
-    """Update issue_range when a caret/underscore range marker line is parsed."""
-    issue_range["endLine"] = end_line or issue_range["startLine"]
-    if rule_id != "I001":
-        if start_col is not None:
-            issue_range["startColumn"] = start_col
-        if end_col is not None:
-            issue_range["endColumn"] = end_col
-    else:
-        issue_range["endLine"] -= 1
-        issue_range.pop("startColumn", None)
-        issue_range.pop("endColumn", None)
+def _text_range(issue: dict) -> dict:
+    """Converts ruff 1-based location / end_location into a Sonar 0-based column text range"""
+    start, end = issue["location"], issue.get("end_location") or issue["location"]
+    if end["row"] > start["row"] and end["column"] == 1:
+        # Range ends at the start of the next line (e.g. I001 import blocks): flag the whole lines
+        return {"startLine": start["row"], "endLine": end["row"] - 1}
+    if end["row"] == start["row"] and end["column"] <= start["column"]:
+        # Empty range, flag the whole line
+        return {"startLine": start["row"], "endLine": start["row"]}
+    return {"startLine": start["row"], "endLine": end["row"], "startColumn": start["column"] - 1, "endColumn": end["column"] - 1}
 
 
 def main() -> None:
     """Main script entry point"""
     v1 = len(sys.argv) > 1 and sys.argv[1] == "v1"
+    text = sys.stdin.read().strip()
     rules_dict = {}
     issue_list = []
-    lines = sys.stdin.read().splitlines()
-    i = 0
-    sonar_issue = None
-    issue_range = {}
-    rule_id = ""
-    nblines = len(lines)
-    end_line = None
-    while i < nblines:
-        line = lines[i]
-        # Search for pattern like "sonar/projects.py:196:13: B904 Within an `except` clause, raise exceptions"
-        if m := re.match(r"^([^:]+):(\d+):(\d+): ([A-Z0-9]+)( \[\*\])? (.+)$", line):
-            if sonar_issue is not None:
-                issue_list.append(sonar_issue)
-                end_line = None
-            file_path = m.group(1)
-            rule_id = m.group(4)
-            message = m.group(6)
-            issue_range = {"startLine": int(m.group(2)), "endLine": int(m.group(2)), "startColumn": int(m.group(3)) - 1, "endColumn": int(m.group(3))}
-            sonar_issue = {
-                "engineId": TOOLNAME,
-                "ruleId": rule_id,
-                "effortMinutes": 5,
-                "primaryLocation": {"message": message, "filePath": file_path, "textRange": issue_range},
-            }
-            if v1:
-                sonar_issue["severity"] = "MAJOR"
-                sonar_issue["type"] = "CODE_SMELL"
-            rules_dict[rule_id] = {
-                "id": rule_id,
-                "name": rule_id,
-                "description": message,
-                "engineId": TOOLNAME,
-                "type": "CODE_SMELL",
-                "severity": "MAJOR",
-                "cleanCodeAttribute": "LOGICAL",
-                "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
-            }
-        elif m := re.match(r"\s+\|\s\|(_+)\^ [A-Z0-9]+", line):
-            # Multi-line span closing marker: "   | |_____^ RUF012"
-            _apply_range_marker(issue_range, rule_id, end_line, None, len(m.group(1)))
-            end_line = None
-        elif m := re.match(r"\s+\| (\s+)(\^+) [A-Z0-9]+", line):
-            # Inline caret marker: "    |     ^^^^ RET505"
-            _apply_range_marker(issue_range, rule_id, end_line, len(m.group(1)), len(m.group(1)) + len(m.group(2)))
-            end_line = None
-        elif m := re.match(r"\s*(\d+)\s\|\s\|.*$", line):
-            end_line = int(m.group(1))
-        i += 1
-
-    if sonar_issue is not None:
+    for issue in json.loads(text) if text else []:
+        rule_id = issue.get("code") or "syntax-error"
+        sonar_issue = {
+            "engineId": TOOLNAME,
+            "ruleId": rule_id,
+            "effortMinutes": 5,
+            "primaryLocation": {"message": issue["message"], "filePath": os.path.relpath(issue["filename"]), "textRange": _text_range(issue)},
+        }
+        if v1:
+            sonar_issue["severity"] = "MAJOR"
+            sonar_issue["type"] = "CODE_SMELL"
         issue_list.append(sonar_issue)
+        rules_dict[rule_id] = {
+            "id": rule_id,
+            "name": f"{rule_id} - {issue.get('name') or rule_id}",
+            "description": issue["message"],
+            "engineId": TOOLNAME,
+            "type": "CODE_SMELL",
+            "severity": "MAJOR",
+            "cleanCodeAttribute": "LOGICAL",
+            "impacts": [{"softwareQuality": "MAINTAINABILITY", "severity": "MEDIUM"}],
+        }
 
     if len(issue_list) == 0:
         return
