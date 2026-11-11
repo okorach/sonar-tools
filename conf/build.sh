@@ -67,7 +67,7 @@ if [[ "${deps}" = "1" ]]; then
 else
     pipopts="--no-deps"
 fi
-python3 -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+"${PYTHON}" -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
 
 if [[ "${build_docs}" = "1" ]]; then
     echo "======= BUILDING DOCS ========="

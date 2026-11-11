@@ -39,6 +39,11 @@ do
         auth="-Dsonar.login=${SONAR_TOKEN}"
       fi
       ;;
+    -Dsonar.token=*|-Dsonar.login=*)
+      # Caller provides its own credentials, don't pass the default ones (avoids scanner logging the overridden token)
+      scanOpts=("${scanOpts[@]}" "${1}")
+      auth_given="true"
+      ;;
     *)
       scanOpts=("${scanOpts[@]}" "${1}")
       ;;
@@ -49,8 +54,11 @@ done
 cmd="sonar-scanner -Dsonar.projectVersion=${VERSION} \
   -Dsonar.python.flake8.reportPaths=${FLAKE8_REPORT} \
   -Dsonar.python.pylint.reportPaths=${PYLINT_REPORT} \
-  -Dsonar.token=${SONAR_TOKEN} ${auth}\
   "${scanOpts[*]}""
+
+if [[ "${auth_given}" != "true" ]]; then
+  cmd="${cmd} -Dsonar.token=${SONAR_TOKEN} ${auth}"
+fi
 
 branch=$(git rev-parse --abbrev-ref HEAD)
 if [[ "${branch}" != "master" ]]; then

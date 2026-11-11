@@ -22,6 +22,8 @@
 ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd .. && pwd )"
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+. "${CONF_DIR}/env.sh"
+
 deps=0
 "${CONF_DIR}"/build.sh "$@"
 
@@ -42,4 +44,4 @@ if [[ "${deps}" = "1" ]]; then
 else
     pipopts="--no-deps"
 fi
-python3 -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
+"${PYTHON}" -m pip install "${pipopts}" --force-reinstall "${ROOT_DIR}"/dist/sonar_tools-*-py3-*.whl
